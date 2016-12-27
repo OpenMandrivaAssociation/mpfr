@@ -4,10 +4,13 @@
 %define statname %mklibname %{name} -d -s
 %bcond_with	crosscompile
 
+# (tpg) optimize it a bit
+%global optflags %optflags -O3
+
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	3.1.5
-Release:	1
+Release:	2
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
