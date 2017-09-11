@@ -9,8 +9,8 @@
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
-Version:	3.1.5
-Release:	2
+Version:	3.1.6
+Release:	1
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
@@ -53,6 +53,13 @@ Static libraries for the MPFR library.
 %apply_patches
 
 %build
+%ifarch %{arm}
+# For some reason, mpfr forces gcc
+# but gcc generates __modsi3 calls when it should
+# be generating __aeabi_modsi3 instead
+export CC=clang
+export CXX=clang++
+%endif
 %configure \
 	--enable-shared \
 	--enable-static \
@@ -60,6 +67,13 @@ Static libraries for the MPFR library.
 	--with-gmp-lib=%{_prefix}/%{_target_platform}/sys-root%{_libdir} \
 %endif
 	--enable-thread-safe
+
+if "$?" != "0"; then
+	echo "configure failed, here's config.log:"
+	cat config.log
+	exit 1
+fi
+
 %make
 
 %install
