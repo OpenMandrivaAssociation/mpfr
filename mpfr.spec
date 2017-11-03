@@ -2,7 +2,7 @@
 %define libname	%mklibname %{name} %{major}
 %define devname	%mklibname %{name} -d
 %define statname %mklibname %{name} -d -s
-%bcond_with	crosscompile
+%bcond_with crosscompile
 
 # (tpg) optimize it a bit
 %global optflags %optflags -O3
@@ -10,12 +10,14 @@
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	3.1.6
-Release:	1
+Release:	2
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
+# (tpg) upstream patches
+Patch0:		http://www.mpfr.org/mpfr-current/patch01
 BuildRequires:	gmp-devel
 
 %description
@@ -60,6 +62,7 @@ Static libraries for the MPFR library.
 export CC=clang
 export CXX=clang++
 %endif
+
 %configure \
 	--enable-shared \
 	--enable-static \
