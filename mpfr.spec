@@ -1,4 +1,4 @@
-%define major 4
+%define major 6
 %define libname	%mklibname %{name} %{major}
 %define devname	%mklibname %{name} -d
 %define statname %mklibname %{name} -d -s
@@ -9,15 +9,13 @@
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
-Version:	3.1.6
-Release:	2
+Version:	4.0.0
+Release:	1
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
-# (tpg) upstream patches
-Patch0:		http://www.mpfr.org/mpfr-current/patch01
 BuildRequires:	gmp-devel
 
 %description
@@ -96,6 +94,7 @@ make check
 %{_includedir}/mpf2mpfr.h
 %{_infodir}/mpfr.info*
 %{_libdir}/libmpfr.so
+%{_libdir}/pkgconfig/mpfr.pc
 
 %files -n %{statname}
 %{_libdir}/libmpfr.a
