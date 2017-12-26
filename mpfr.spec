@@ -17,6 +17,7 @@ Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
 BuildRequires:	gmp-devel
+BuildRequires:	autoconf-archive
 
 %description
 The MPFR library is a C library for multiple-precision
