@@ -9,7 +9,7 @@
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
-Version:	4.0.0
+Version:	4.0.1
 Release:	1
 License:	LGPLv3+
 Group:		System/Libraries
