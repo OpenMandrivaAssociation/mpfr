@@ -9,8 +9,8 @@
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
-Version:	4.0.1
-Release:	2
+Version:	4.0.2
+Release:	1
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
@@ -50,8 +50,7 @@ Provides:	%{name}-static-devel = %{EVRD}
 Static libraries for the MPFR library.
 
 %prep
-%setup -q
-%apply_patches
+%autosetup -p1
 
 %build
 %ifarch %{arm}
@@ -70,16 +69,16 @@ export CXX=clang++
 %endif
 	--enable-thread-safe
 
-if "$?" != "0"; then
+if [ "$?" != '0' ]; then
 	echo "configure failed, here's config.log:"
 	cat config.log
 	exit 1
 fi
 
-%make
+%make_build
 
 %install
-%makeinstall_std
+%make_install
 
 rm -rf installed-docs
 mv %{buildroot}%{_docdir}/%{name} installed-docs
