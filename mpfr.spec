@@ -7,10 +7,13 @@
 # (tpg) optimize it a bit
 %global optflags %optflags -O3
 
+# (tpg) enable PGO build
+%bcond_without pgo
+
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	4.0.2
-Release:	1
+Release:	2
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
@@ -61,6 +64,40 @@ export CC=clang
 export CXX=clang++
 %endif
 
+%if %{with pgo}
+export LLVM_PROFILE_FILE=%{name}-%p.profile.d
+export LD_LIBRARY_PATH="$(pwd)"
+CFLAGS="%{optflags} -fprofile-instr-generate" \
+CXXFLAGS="%{optflags} -fprofile-instr-generate" \
+FFLAGS="$CFLAGS_PGO" \
+FCFLAGS="$CFLAGS_PGO" \
+LDFLAGS="%{ldflags} -fprofile-instr-generate" \
+%configure \
+	--enable-shared \
+	--enable-static \
+%if %{with crosscompile}
+	--with-gmp-lib=%{_prefix}/%{_target_platform}/sys-root%{_libdir} \
+%endif
+	--enable-thread-safe
+
+if [ "$?" != '0' ]; then
+	echo "configure failed, here's config.log:"
+	cat config.log
+	exit 1
+fi
+
+%make_build
+make check
+unset LD_LIBRARY_PATH
+unset LLVM_PROFILE_FILE
+llvm-profdata merge --output=%{name}.profile *.profile.d
+
+make clean
+
+CFLAGS="%{optflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
+CXXFLAGS="%{optflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
+LDFLAGS="%{ldflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
+%endif
 %configure \
 	--enable-shared \
 	--enable-static \
