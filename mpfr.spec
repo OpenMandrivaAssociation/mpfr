@@ -19,6 +19,7 @@ Group:		System/Libraries
 Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
+Patch0:		https://www.mpfr.org/mpfr-4.0.2/patch01
 BuildRequires:	gmp-devel
 BuildRequires:	autoconf-archive
 
@@ -75,6 +76,9 @@ LDFLAGS="%{ldflags} -fprofile-instr-generate" \
 %configure \
 	--enable-shared \
 	--enable-static \
+%ifarch %{ix86}
+	--disable-float128 \
+%endif
 %if %{with crosscompile}
 	--with-gmp-lib=%{_prefix}/%{_target_platform}/sys-root%{_libdir} \
 %endif
@@ -88,6 +92,9 @@ fi
 
 %make_build
 make check
+cd tools/bench
+make bench
+cd -
 unset LD_LIBRARY_PATH
 unset LLVM_PROFILE_FILE
 llvm-profdata merge --output=%{name}.profile *.profile.d
@@ -101,6 +108,9 @@ LDFLAGS="%{ldflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
 %configure \
 	--enable-shared \
 	--enable-static \
+%ifarch %{ix86}
+	--disable-float128 \
+%endif
 %if %{with crosscompile}
 	--with-gmp-lib=%{_prefix}/%{_target_platform}/sys-root%{_libdir} \
 %endif
