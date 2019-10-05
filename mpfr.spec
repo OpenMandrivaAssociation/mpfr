@@ -1,6 +1,6 @@
 %define major 6
-%define libname	%mklibname %{name} %{major}
-%define devname	%mklibname %{name} -d
+%define libname %mklibname %{name} %{major}
+%define devname %mklibname %{name} -d
 %define statname %mklibname %{name} -d -s
 %bcond_with crosscompile
 
@@ -13,13 +13,14 @@
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	4.0.2
-Release:	3
+Release:	4
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
 Patch0:		https://www.mpfr.org/mpfr-4.0.2/patch01
+Patch1:		floating-point-format-no-lto.patch
 BuildRequires:	gmp-devel
 BuildRequires:	autoconf-archive
 
