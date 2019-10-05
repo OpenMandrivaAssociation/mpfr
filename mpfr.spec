@@ -134,7 +134,7 @@ mv %{buildroot}%{_docdir}/%{name} installed-docs
 %check
 # FIXME tset_float128 is known to fail on ix86
 %ifnarch %{ix86}
-make check
+make check || cat test-suite.log && exit 1
 %endif
 
 %files -n %{libname}
