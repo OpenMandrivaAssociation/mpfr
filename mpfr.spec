@@ -92,6 +92,7 @@ if [ "$?" != '0' ]; then
 fi
 
 %make_build
+export LD_LIBRARY_PATH="%{buildroot}%{_libdir}"
 make check || cat tests/test-suite.log && exit 1
 cd tools/bench
 make bench
