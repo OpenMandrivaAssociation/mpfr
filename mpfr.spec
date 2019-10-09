@@ -4,6 +4,10 @@
 %define statname %mklibname %{name} -d -s
 %bcond_with crosscompile
 
+# (tpg) configure script is broken when LTO is used
+# so disable it and push LTO at make_build stage
+%define _disable_lto 1
+
 # (tpg) optimize it a bit
 %global optflags %optflags -O3
 
@@ -13,14 +17,13 @@
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	4.0.2
-Release:	4
+Release:	5
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
 Patch0:		https://www.mpfr.org/mpfr-4.0.2/patch01
-Patch1:		floating-point-format-no-lto.patch
 BuildRequires:	gmp-devel
 BuildRequires:	autoconf-archive
 
@@ -91,7 +94,9 @@ if [ "$?" != '0' ]; then
 	exit 1
 fi
 
-%make_build
+# (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
+%make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{ldflags} -flto"
+
 export LD_LIBRARY_PATH="%{buildroot}%{_libdir}"
 # (tpg) 2019-10-09 one test fail so let's move on
 #.. contents:: :depth: 2
@@ -137,7 +142,8 @@ if [ "$?" != '0' ]; then
 	exit 1
 fi
 
-%make_build
+# (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
+%make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{ldflags} -flto"
 
 %install
 %make_install
