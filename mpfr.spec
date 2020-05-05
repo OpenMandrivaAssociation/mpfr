@@ -17,14 +17,20 @@
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	4.0.2
-Release:	5
+Release:	6
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
 Patch0:		https://www.mpfr.org/mpfr-4.0.2/patch01
-BuildRequires:	gmp-devel
+Patch1:		https://www.mpfr.org/mpfr-4.0.2/patch02
+Patch2:		https://www.mpfr.org/mpfr-4.0.2/patch03
+Patch3:		https://www.mpfr.org/mpfr-4.0.2/patch04
+Patch4:		https://www.mpfr.org/mpfr-4.0.2/patch05
+Patch5:		https://www.mpfr.org/mpfr-4.0.2/patch06
+Patch6:		https://www.mpfr.org/mpfr-4.0.2/patch07
+BuildRequires:	pkgconfig(gmp)
 BuildRequires:	autoconf-archive
 
 %description
