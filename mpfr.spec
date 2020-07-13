@@ -94,7 +94,12 @@ if [ "$?" != '0' ]; then
 fi
 
 # (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
+# 2020-07-13 disable LTO on riscv
+%ifnarch %{riscv}
 %make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{ldflags} -flto"
+%else
+%make_build
+%endif
 
 export LD_LIBRARY_PATH="%{buildroot}%{_libdir}"
 # (tpg) 2019-10-09 one test fail so let's move on
@@ -142,7 +147,12 @@ if [ "$?" != '0' ]; then
 fi
 
 # (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
+# 2020-07-13 disable LTO on riscv
+%ifnarch %{riscv}
 %make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{ldflags} -flto"
+%else
+%make_build
+%endif
 
 %install
 %make_install
