@@ -12,7 +12,11 @@
 %global optflags %optflags -O3
 
 # (tpg) enable PGO build
+%ifnarch aarch64
 %bcond_without pgo
+%else
+%bcond_with pgo
+%endif
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
