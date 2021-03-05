@@ -23,6 +23,15 @@ Group:		System/Libraries
 Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
+Patch0:		https://www.mpfr.org/mpfr-current/patch01
+Patch1:		https://www.mpfr.org/mpfr-current/patch02
+Patch2:		https://www.mpfr.org/mpfr-current/patch03
+Patch3:		https://www.mpfr.org/mpfr-current/patch04
+Patch4:		https://www.mpfr.org/mpfr-current/patch05
+Patch5:		https://www.mpfr.org/mpfr-current/patch06
+Patch6:		https://www.mpfr.org/mpfr-current/patch07
+Patch7:		https://www.mpfr.org/mpfr-current/patch08
+Patch8:		https://www.mpfr.org/mpfr-current/patch09
 BuildRequires:	pkgconfig(gmp)
 BuildRequires:	autoconf-archive
 
@@ -88,9 +97,9 @@ LDFLAGS="%{ldflags} -fprofile-instr-generate" \
 	--enable-thread-safe
 
 if [ "$?" != '0' ]; then
-	echo "configure failed, here's config.log:"
-	cat config.log
-	exit 1
+    echo "configure failed, here's config.log:"
+    cat config.log
+    exit 1
 fi
 
 # (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage

@@ -1,441 +1,284 @@
-diff -Naurd mpfr-4.0.2-a/PATCHES mpfr-4.0.2-b/PATCHES
---- mpfr-4.0.2-a/PATCHES	2020-03-30 13:05:16.224990169 +0000
-+++ mpfr-4.0.2-b/PATCHES	2020-03-30 13:05:16.264989689 +0000
+diff -Naurd mpfr-4.1.0-a/PATCHES mpfr-4.1.0-b/PATCHES
+--- mpfr-4.1.0-a/PATCHES	2021-02-11 12:46:49.075316772 +0000
++++ mpfr-4.1.0-b/PATCHES	2021-02-11 12:46:49.115316335 +0000
 @@ -0,0 +1 @@
-+set-int
-diff -Naurd mpfr-4.0.2-a/VERSION mpfr-4.0.2-b/VERSION
---- mpfr-4.0.2-a/VERSION	2020-03-30 13:02:08.143248189 +0000
-+++ mpfr-4.0.2-b/VERSION	2020-03-30 13:05:16.264989689 +0000
++set_z_2exp-overflow
+diff -Naurd mpfr-4.1.0-a/VERSION mpfr-4.1.0-b/VERSION
+--- mpfr-4.1.0-a/VERSION	2021-02-11 12:43:51.801257430 +0000
++++ mpfr-4.1.0-b/VERSION	2021-02-11 12:46:49.115316335 +0000
 @@ -1 +1 @@
--4.0.2-p2
-+4.0.2-p3
-diff -Naurd mpfr-4.0.2-a/src/mpfr.h mpfr-4.0.2-b/src/mpfr.h
---- mpfr-4.0.2-a/src/mpfr.h	2020-03-30 13:02:08.143248189 +0000
-+++ mpfr-4.0.2-b/src/mpfr.h	2020-03-30 13:05:16.260989737 +0000
+-4.1.0-p2
++4.1.0-p3
+diff -Naurd mpfr-4.1.0-a/src/mpfr.h mpfr-4.1.0-b/src/mpfr.h
+--- mpfr-4.1.0-a/src/mpfr.h	2021-02-11 12:43:51.801257430 +0000
++++ mpfr-4.1.0-b/src/mpfr.h	2021-02-11 12:46:49.115316335 +0000
 @@ -27,7 +27,7 @@
  #define MPFR_VERSION_MAJOR 4
- #define MPFR_VERSION_MINOR 0
- #define MPFR_VERSION_PATCHLEVEL 2
--#define MPFR_VERSION_STRING "4.0.2-p2"
-+#define MPFR_VERSION_STRING "4.0.2-p3"
+ #define MPFR_VERSION_MINOR 1
+ #define MPFR_VERSION_PATCHLEVEL 0
+-#define MPFR_VERSION_STRING "4.1.0-p2"
++#define MPFR_VERSION_STRING "4.1.0-p3"
  
  /* User macros:
     MPFR_USE_FILE:        Define it to make MPFR define functions dealing
-diff -Naurd mpfr-4.0.2-a/src/set_si_2exp.c mpfr-4.0.2-b/src/set_si_2exp.c
---- mpfr-4.0.2-a/src/set_si_2exp.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/src/set_si_2exp.c	2020-03-30 13:05:16.248989881 +0000
-@@ -40,6 +40,15 @@
-       mp_limb_t ai, *xp;
-       int inex = 0;
- 
-+      /* Early underflow/overflow checking is necessary to avoid
-+         integer overflow or errors due to special exponent values. */
-+      if (MPFR_UNLIKELY (e < __gmpfr_emin - (mpfr_exp_t)
-+                         (sizeof (unsigned long) * CHAR_BIT + 1)))
-+        return mpfr_underflow (x, rnd_mode == MPFR_RNDN ?
-+                               MPFR_RNDZ : rnd_mode, i < 0 ? -1 : 1);
-+      if (MPFR_UNLIKELY (e >= __gmpfr_emax))
-+        return mpfr_overflow (x, rnd_mode, i < 0 ? -1 : 1);
-+
-       /* FIXME: support int limbs (e.g. 16-bit limbs on 16-bit proc) */
-       ai = SAFE_ABS (unsigned long, i);
-       MPFR_ASSERTN (SAFE_ABS (unsigned long, i) == ai);
-diff -Naurd mpfr-4.0.2-a/src/set_ui_2exp.c mpfr-4.0.2-b/src/set_ui_2exp.c
---- mpfr-4.0.2-a/src/set_ui_2exp.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/src/set_ui_2exp.c	2020-03-30 13:05:16.248989881 +0000
-@@ -41,6 +41,15 @@
-       mp_limb_t *xp;
-       int inex = 0;
- 
-+      /* Early underflow/overflow checking is necessary to avoid
-+         integer overflow or errors due to special exponent values. */
-+      if (MPFR_UNLIKELY (e < __gmpfr_emin - (mpfr_exp_t)
-+                         (sizeof (unsigned long) * CHAR_BIT + 1)))
-+        return mpfr_underflow (x, rnd_mode == MPFR_RNDN ?
-+                               MPFR_RNDZ : rnd_mode, i < 0 ? -1 : 1);
-+      if (MPFR_UNLIKELY (e >= __gmpfr_emax))
-+        return mpfr_overflow (x, rnd_mode, i < 0 ? -1 : 1);
-+
-       /* FIXME: support int limbs (e.g. 16-bit limbs on 16-bit proc) */
-       MPFR_ASSERTD (i == (mp_limb_t) i);
- 
-diff -Naurd mpfr-4.0.2-a/src/set_uj.c mpfr-4.0.2-b/src/set_uj.c
---- mpfr-4.0.2-a/src/set_uj.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/src/set_uj.c	2020-03-30 13:05:16.248989881 +0000
-@@ -41,7 +41,7 @@
+diff -Naurd mpfr-4.1.0-a/src/set_z_exp.c mpfr-4.1.0-b/src/set_z_exp.c
+--- mpfr-4.1.0-a/src/set_z_exp.c	2020-01-08 18:11:13.000000000 +0000
++++ mpfr-4.1.0-b/src/set_z_exp.c	2021-02-11 12:46:49.103316466 +0000
+@@ -28,10 +28,11 @@
  int
- mpfr_set_uj_2exp (mpfr_t x, uintmax_t j, intmax_t e, mpfr_rnd_t rnd)
+ mpfr_set_z_2exp (mpfr_ptr f, mpz_srcptr z, mpfr_exp_t e, mpfr_rnd_t rnd_mode)
  {
--  int cnt;
-+  int cnt, inex;
-   mp_size_t i, k;
-   mp_limb_t limb;
-   mp_limb_t yp[uintmaxpml];
-@@ -57,6 +57,10 @@
-       MPFR_RET(0);
-     }
+-  mp_size_t fn, zn, dif, en;
++  mp_size_t fn, zn, dif;
+   int k, sign_z, inex;
+   mp_limb_t *fp, *zp;
+-  mpfr_exp_t exp;
++  mpfr_exp_t exp, nmax;
++  mpfr_uexp_t uexp;
  
-+  /* early overflow detection to avoid a possible integer overflow below */
-+  if (MPFR_UNLIKELY(e >= __gmpfr_emax))
-+    return mpfr_overflow (x, rnd, MPFR_SIGN_POS);
+   sign_z = mpz_sgn (z);
+   if (MPFR_UNLIKELY (sign_z == 0)) /* ignore the exponent for 0 */
+@@ -43,10 +44,15 @@
+   MPFR_ASSERTD (sign_z == MPFR_SIGN_POS || sign_z == MPFR_SIGN_NEG);
+ 
+   zn = ABSIZ(z); /* limb size of z */
+-  /* compute en = floor(e/GMP_NUMB_BITS) */
+-  en = (e >= 0) ? e / GMP_NUMB_BITS : (e + 1) / GMP_NUMB_BITS - 1;
+   MPFR_ASSERTD (zn >= 1);
+-  if (MPFR_UNLIKELY (zn + en > MPFR_EMAX_MAX / GMP_NUMB_BITS + 1))
++  nmax = MPFR_EMAX_MAX / GMP_NUMB_BITS + 1;
++  /* Detect early overflow with zn + en > nmax,
++     where en = floor(e / GMP_NUMB_BITS).
++     This is checked without an integer overflow (even assuming some
++     future version of GMP, where limitations may be removed). */
++  if (MPFR_UNLIKELY (e >= 0 ?
++                     zn > nmax - e / GMP_NUMB_BITS :
++                     zn + (e + 1) / GMP_NUMB_BITS - 1 > nmax))
+     return mpfr_overflow (f, rnd_mode, sign_z);
+   /* because zn + en >= MPFR_EMAX_MAX / GMP_NUMB_BITS + 2
+      implies (zn + en) * GMP_NUMB_BITS >= MPFR_EMAX_MAX + GMP_NUMB_BITS + 1
+@@ -64,8 +70,21 @@
+      and exp = zn * GMP_NUMB_BITS + e - k
+              <= (zn + en) * GMP_NUMB_BITS - k + GMP_NUMB_BITS - 1
+              <= MPFR_EMAX_MAX + 2 * GMP_NUMB_BITS - 1 */
+-  exp = (mpfr_prec_t) zn * GMP_NUMB_BITS + e - k;
++  /* We need to compute exp = zn * GMP_NUMB_BITS + e - k with well-defined
++     operations (no integer overflows / no implementation-defined results).
++     The mathematical result of zn * GMP_NUMB_BITS may be larger than
++     the largest value of mpfr_exp_t while exp could still be less than
++     __gmpfr_emax. Thanks to early overflow detection, we can compute the
++     result in modular arithmetic, using mpfr_uexp_t, and convert it to
++     mpfr_exp_t. */
++  uexp = (mpfr_uexp_t) zn * GMP_NUMB_BITS + (mpfr_uexp_t) e - k;
 +
-   MPFR_ASSERTN (sizeof(uintmax_t) % sizeof(mp_limb_t) == 0);
- 
-   /* Create an auxiliary var */
-@@ -107,7 +111,9 @@
-   e += k * GMP_NUMB_BITS - cnt;    /* Update Expo */
-   MPFR_ASSERTD (MPFR_LIMB_MSB(yp[numberof (yp) - 1]) != 0);
- 
--  /* Check expo underflow / overflow (can't use mpfr_check_range) */
-+  MPFR_RNDRAW (inex, x, yp, uintmax_bit_size, rnd, MPFR_SIGN_POS, e++);
++  /* Convert to signed in a portable way (see doc/README.dev).
++     On most platforms, this can be optimized to identity (no-op). */
++  exp = uexp > MPFR_EXP_MAX ? -1 - (mpfr_exp_t) ~uexp : (mpfr_exp_t) uexp;
 +
-+  /* Check expo underflow / overflow */
-   if (MPFR_UNLIKELY(e < __gmpfr_emin))
-     {
-       /* The following test is necessary because in the rounding to the
-@@ -116,16 +122,18 @@
-        *   _ |x| < 2^(emin-2), or
-        *   _ |x| = 2^(emin-2) and the absolute value of the exact
-        *     result is <= 2^(emin-2). */
--      if (rnd == MPFR_RNDN && (e+1 < __gmpfr_emin || mpfr_powerof2_raw(y)))
-+      if (rnd == MPFR_RNDN &&
-+          (e + 1 < __gmpfr_emin ||
-+           (mpfr_powerof2_raw (x) && inex >= 0)))
-         rnd = MPFR_RNDZ;
-       return mpfr_underflow (x, rnd, MPFR_SIGN_POS);
-     }
-   if (MPFR_UNLIKELY(e > __gmpfr_emax))
-     return mpfr_overflow (x, rnd, MPFR_SIGN_POS);
--  MPFR_SET_EXP (y, e);
- 
--  /* Final: set x to y (rounding if necessary) */
--  return mpfr_set (x, y, rnd);
-+  MPFR_SET_SIGN (x, MPFR_SIGN_POS);
-+  MPFR_SET_EXP (x, e);
-+  MPFR_RET (inex);
- }
- 
- #endif
-diff -Naurd mpfr-4.0.2-a/src/version.c mpfr-4.0.2-b/src/version.c
---- mpfr-4.0.2-a/src/version.c	2020-03-30 13:02:08.143248189 +0000
-+++ mpfr-4.0.2-b/src/version.c	2020-03-30 13:05:16.264989689 +0000
+   /* The exponent will be exp or exp + 1 (due to rounding) */
++
+   if (MPFR_UNLIKELY (exp > __gmpfr_emax))
+     return mpfr_overflow (f, rnd_mode, sign_z);
+   if (MPFR_UNLIKELY (exp + 1 < __gmpfr_emin))
+diff -Naurd mpfr-4.1.0-a/src/version.c mpfr-4.1.0-b/src/version.c
+--- mpfr-4.1.0-a/src/version.c	2021-02-11 12:43:51.801257430 +0000
++++ mpfr-4.1.0-b/src/version.c	2021-02-11 12:46:49.115316335 +0000
 @@ -25,5 +25,5 @@
  const char *
  mpfr_get_version (void)
  {
--  return "4.0.2-p2";
-+  return "4.0.2-p3";
+-  return "4.1.0-p2";
++  return "4.1.0-p3";
  }
-diff -Naurd mpfr-4.0.2-a/tests/tset_si.c mpfr-4.0.2-b/tests/tset_si.c
---- mpfr-4.0.2-a/tests/tset_si.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/tests/tset_si.c	2020-03-30 13:05:16.248989881 +0000
-@@ -90,6 +90,135 @@
-   mpfr_clear (x);
- }
+diff -Naurd mpfr-4.1.0-a/tests/tset_z_exp.c mpfr-4.1.0-b/tests/tset_z_exp.c
+--- mpfr-4.1.0-a/tests/tset_z_exp.c	2020-01-08 18:11:13.000000000 +0000
++++ mpfr-4.1.0-b/tests/tset_z_exp.c	2021-02-11 12:46:49.103316466 +0000
+@@ -97,49 +97,149 @@
+    mpfr_get_si is a rather indirect test of a low level routine.  */
  
-+#define REXP 1024
-+
-+static void
-+test_2exp_extreme_aux (void)
-+{
-+  mpfr_t x1, x2, y;
-+  mpfr_exp_t e, ep[1 + 8 * 5], eb[] =
-+    { MPFR_EMIN_MIN, -REXP, REXP, MPFR_EMAX_MAX, MPFR_EXP_MAX };
-+  mpfr_flags_t flags1, flags2;
-+  int i, j, rnd, inex1, inex2;
-+  char s;
-+
-+  ep[0] = MPFR_EXP_MIN;
-+  for (i = 0; i < numberof(eb); i++)
-+    for (j = 0; j < 8; j++)
-+      ep[1 + 8 * i + j] = eb[i] - j;
-+
-+  mpfr_inits2 (3, x1, x2, (mpfr_ptr) 0);
-+  mpfr_init2 (y, 32);
-+
-+  for (i = 0; i < numberof(ep); i++)
-+    for (j = -31; j <= 31; j++)
-+      RND_LOOP_NO_RNDF (rnd)
-+        {
-+          int sign = j < 0 ? -1 : 1;
-+
-+          /* Compute the expected value, inex and flags */
-+          inex1 = mpfr_set_si (y, j, MPFR_RNDN);
-+          MPFR_ASSERTN (inex1 == 0);
-+          inex1 = mpfr_set (x1, y, (mpfr_rnd_t) rnd);
-+          /* x1 is the rounded value and inex1 the ternary value,
-+             assuming that the exponent argument is 0 (this is the
-+             rounded significand of the final result, assuming an
-+             unbounded exponent range). The multiplication by a
-+             power of 2 is exact, unless underflow/overflow occurs.
-+             The tests on the exponent below avoid integer overflows
-+             (ep[i] may take extreme values). */
-+          e = mpfr_get_exp (x1);
-+          mpfr_clear_flags ();
-+          if (j != 0 && ep[i] < __gmpfr_emin - e)  /* underflow */
-+            {
-+              mpfr_rnd_t r =
-+                (rnd == MPFR_RNDN &&
-+                 (ep[i] < __gmpfr_emin - mpfr_get_exp (y) - 1 ||
-+                  IS_POW2 (sign * j))) ?
-+                MPFR_RNDZ : (mpfr_rnd_t) rnd;
-+              inex1 = mpfr_underflow (x1, r, sign);
-+              flags1 = __gmpfr_flags;
-+            }
-+          else if (j != 0 && ep[i] > __gmpfr_emax - e)  /* overflow */
-+            {
-+              inex1 = mpfr_overflow (x1, (mpfr_rnd_t) rnd, sign);
-+              flags1 = __gmpfr_flags;
-+            }
-+          else
-+            {
-+              if (j != 0)
-+                mpfr_set_exp (x1, ep[i] + e);
-+              flags1 = inex1 != 0 ? MPFR_FLAGS_INEXACT : 0;
-+            }
-+
-+          /* Test mpfr_set_si_2exp */
-+          mpfr_clear_flags ();
-+          inex2 = mpfr_set_si_2exp (x2, j, ep[i], (mpfr_rnd_t) rnd);
-+          flags2 = __gmpfr_flags;
-+
-+          if (! (flags1 == flags2 && SAME_SIGN (inex1, inex2) &&
-+                 mpfr_equal_p (x1, x2)))
-+            {
-+              s = 's';
-+              goto err_extreme;
-+            }
-+
-+          if (j < 0)
-+            continue;
-+
-+          /* Test mpfr_set_ui_2exp */
-+          mpfr_clear_flags ();
-+          inex2 = mpfr_set_ui_2exp (x2, j, ep[i], (mpfr_rnd_t) rnd);
-+          flags2 = __gmpfr_flags;
-+
-+          if (! (flags1 == flags2 && SAME_SIGN (inex1, inex2) &&
-+                 mpfr_equal_p (x1, x2)))
-+            {
-+              s = 'u';
-+            err_extreme:
-+              printf ("Error in extreme mpfr_set_%ci_2exp for i=%d j=%d %s\n",
-+                      s, i, j, mpfr_print_rnd_mode ((mpfr_rnd_t) rnd));
-+              printf ("emin=%" MPFR_EXP_FSPEC "d "
-+                      "emax=%" MPFR_EXP_FSPEC "d\n",
-+                      (mpfr_eexp_t) __gmpfr_emin,
-+                      (mpfr_eexp_t) __gmpfr_emax);
-+              printf ("ep[%d] = %" MPFR_EXP_FSPEC "d\n",
-+                      i, (mpfr_eexp_t) ep[i]);
-+              printf ("Expected ");
-+              mpfr_dump (x1);
-+              printf ("with inex = %d and flags =", inex1);
-+              flags_out (flags1);
-+              printf ("Got      ");
-+              mpfr_dump (x2);
-+              printf ("with inex = %d and flags =", inex2);
-+              flags_out (flags2);
-+              exit (1);
-+            }
-+        }
-+
-+  mpfr_clears (x1, x2, y, (mpfr_ptr) 0);
-+}
-+
-+static void
-+test_2exp_extreme (void)
-+{
-+  mpfr_exp_t emin, emax;
-+
-+  emin = mpfr_get_emin ();
-+  emax = mpfr_get_emax ();
-+
-+  set_emin (MPFR_EMIN_MIN);
-+  set_emax (MPFR_EMAX_MAX);
-+  test_2exp_extreme_aux ();
-+
-+  set_emin (-REXP);
-+  set_emax (REXP);
-+  test_2exp_extreme_aux ();
-+
-+  set_emin (emin);
-+  set_emax (emax);
-+}
-+
  static void
- test_macros (void)
+-check (long i, mpfr_rnd_t rnd)
++check (long i, mpfr_rnd_t rnd, int reduced)
  {
-@@ -639,6 +768,7 @@
-   mpfr_clear (x);
+-  mpfr_t f;
++  mpfr_t f1, f2, f3;
+   mpz_t z;
+-  mpfr_exp_t e;
++  mpfr_exp_t e, old_emin, old_emax;
+   int inex;
++  mpfr_flags_t flags;
++
++  old_emin = mpfr_get_emin ();
++  old_emax = mpfr_get_emax ();
  
-   test_2exp ();
-+  test_2exp_extreme ();
-   test_macros ();
-   test_macros_keyword ();
-   test_get_ui_smallneg ();
-diff -Naurd mpfr-4.0.2-a/tests/tset_sj.c mpfr-4.0.2-b/tests/tset_sj.c
---- mpfr-4.0.2-a/tests/tset_sj.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/tests/tset_sj.c	2020-03-30 13:05:16.248989881 +0000
-@@ -176,6 +176,154 @@
-   mpfr_clear (x);
+   /* using CHAR_BIT * sizeof(long) bits of precision ensures that
+      mpfr_set_z_2exp is exact below */
+-  mpfr_init2 (f, CHAR_BIT * sizeof(long));
++  mpfr_inits2 (CHAR_BIT * sizeof(long), f1, f2, f3, (mpfr_ptr) 0);
+   mpz_init (z);
+   mpz_set_ui (z, i);
+   /* the following loop ensures that no overflow occurs */
+   do
+     e = randexp ();
+   while (e > mpfr_get_emax () - CHAR_BIT * sizeof(long));
+-  inex = mpfr_set_z_2exp (f, z, e, rnd);
+-  if (inex != 0)
++
++  mpfr_clear_flags ();
++  inex = mpfr_set_z_2exp (f1, z, e, rnd);
++  flags = __gmpfr_flags;
++
++  if (inex != 0 || flags != 0 ||
++      (mpfr_div_2si (f2, f1, e, rnd), mpfr_get_si (f2, MPFR_RNDZ) != i))
+     {
+-      printf ("Error in mpfr_set_z_2exp for i=%ld, e=%ld,"
+-              " wrong ternary value\n", i, (long) e);
+-      printf ("expected 0, got %d\n", inex);
++      printf ("Error in mpfr_set_z_2exp for i=%ld e=%" MPFR_EXP_FSPEC
++              "d rnd_mode=%d\n", i, (mpfr_eexp_t) e, rnd);
++      mpfr_set_si_2exp (f2, i, e, MPFR_RNDN);
++      printf ("expected "); mpfr_dump (f2);
++      printf ("with inex = %d and flags =", 0);
++      flags_out (0);
++      printf ("got      "); mpfr_dump (f1);
++      printf ("with inex = %d and flags =", inex);
++      flags_out (flags);
+       exit (1);
+     }
+-  mpfr_div_2si (f, f, e, rnd);
+-  if (mpfr_get_si (f, MPFR_RNDZ) != i)
++
++  if (reduced)
+     {
+-      printf ("Error in mpfr_set_z_2exp for i=%ld e=", i);
+-      if (e < LONG_MIN)
+-        printf ("(<LONG_MIN)");
+-      else if (e > LONG_MAX)
+-        printf ("(>LONG_MAX)");
+-      else
+-        printf ("%ld", (long) e);
+-      printf (" rnd_mode=%d\n", rnd);
+-      printf ("expected %ld\n", i);
+-      printf ("got      "); mpfr_dump (f);
+-      exit (1);
++      mpfr_exp_t ef, emin, emax;
++      int inex2, inex3;
++      mpfr_flags_t flags2, flags3;
++
++      ef = i == 0 ? 0 : mpfr_get_exp (f1);
++      for (emin = ef - 2; emin <= ef + 2; emin++)
++        for (emax = emin; emax <= ef + 2; emax++)
++          {
++            inex3 = mpfr_set (f3, f1, rnd);
++            MPFR_ASSERTN (inex3 == 0);
++            mpfr_set_emin (emin);
++            mpfr_set_emax (emax);
++            mpfr_clear_flags ();
++            inex2 = mpfr_set_z_2exp (f2, z, e, rnd);
++            flags2 = __gmpfr_flags;
++            mpfr_clear_flags ();
++            inex3 = mpfr_check_range (f3, 0, rnd);
++            flags3 = __gmpfr_flags;
++            if (!(mpfr_equal_p (f2, f3) &&
++                  SAME_SIGN (inex2, inex3) &&
++                  flags2 == flags3))
++              {
++                printf ("Error in mpfr_set_z_2exp for i=%ld e=%"
++                        MPFR_EXP_FSPEC "d rnd_mode=%d\nand emin=%"
++                        MPFR_EXP_FSPEC "d emax=%" MPFR_EXP_FSPEC
++                        "d\n", i, (mpfr_eexp_t) e, rnd,
++                        (mpfr_eexp_t) emin, (mpfr_eexp_t) emax);
++                printf ("expected "); mpfr_dump (f3);
++                printf ("with inex = %d and flags =", inex3);
++                flags_out (flags3);
++                printf ("got      "); mpfr_dump (f2);
++                printf ("with inex = %d and flags =", inex2);
++                flags_out (flags2);
++                exit (1);
++              }
++          }
++      mpfr_set_emin (old_emin);
++      mpfr_set_emax (old_emax);
+     }
+-  mpfr_clear (f);
++
++  mpfr_clears (f1, f2, f3, (mpfr_ptr) 0);
+   mpz_clear (z);
  }
  
-+#define REXP 1024
-+
 +static void
-+test_2exp_extreme_aux (void)
++check_huge (void)
 +{
-+  mpfr_t x1, x2, y;
-+  mpfr_exp_t e, ep[1 + 8 * 5], eb[] =
-+    { MPFR_EMIN_MIN, -REXP, REXP, MPFR_EMAX_MAX, MPFR_EXP_MAX };
-+  mpfr_flags_t flags1, flags2;
-+  int i, j, rnd, inex1, inex2;
-+  char s;
++  if (getenv ("MPFR_CHECK_LARGEMEM") != NULL)
++    {
++      mpfr_t x;
++      mpz_t z;
++      long e;
 +
-+  ep[0] = MPFR_EXP_MIN;
-+  for (i = 0; i < numberof(eb); i++)
-+    for (j = 0; j < 8; j++)
-+      ep[1 + 8 * i + j] = eb[i] - j;
++      /* Increase tests_memory_limit to the maximum in order to avoid
++         an obvious failure due to insufficient memory. */
++      tests_memory_limit = (size_t) -1;  /* no memory limit */
 +
-+  mpfr_inits2 (3, x1, x2, (mpfr_ptr) 0);
-+  mpfr_init2 (y, 32);
++      mpfr_init2 (x, 32);
 +
-+  /* The cast to int is needed if numberof(ep) is of unsigned type, in
-+     which case the condition without the cast would be always false. */
-+  for (i = -2; i < (int) numberof(ep); i++)
-+    for (j = -31; j <= 31; j++)
-+      RND_LOOP_NO_RNDF (rnd)
++      /* In r14140, with a 32-bit ABI (GCC's -m32):
++         - With UBsan (-fsanitize=undefined -fno-sanitize-recover),
++           this fails with:
++             set_z_2exp.c:71:26: runtime error: signed integer overflow:
++             67108864 * 32 cannot be represented in type 'long int'
++         - With -D_MPFR_EXP_FORMAT=4, this fails with:
++             Expected 0.10001000000000000000000000000000E5
++             Got      0
++      */
++      mpz_init_set_ui (z, 17);
++      e = 0x7ffffff0;
++      mpz_mul_2exp (z, z, e);
++      mpz_add_ui (z, z, 1);
++      mpfr_set_z_2exp (x, z, -e, MPFR_RNDN);
++      if (mpfr_cmp_ui0 (x, 17) != 0)
 +        {
-+          int sign = j < 0 ? -1 : 1;
-+          intmax_t em;
-+
-+          if (i < 0)
-+            {
-+              em = i == -2 ? INTMAX_MIN : INTMAX_MAX;
-+              mpfr_clear_flags ();
-+              inex1 = j == 0 ?
-+                (mpfr_set_zero (x1, +1), 0) : i == -2 ?
-+                mpfr_underflow (x1, rnd == MPFR_RNDN ?
-+                                MPFR_RNDZ : (mpfr_rnd_t) rnd, sign) :
-+                mpfr_overflow (x1, (mpfr_rnd_t) rnd, sign);
-+              flags1 = __gmpfr_flags;
-+            }
-+          else
-+            {
-+              em = ep[i];
-+              /* Compute the expected value, inex and flags */
-+              inex1 = mpfr_set_si (y, j, MPFR_RNDN);
-+              MPFR_ASSERTN (inex1 == 0);
-+              inex1 = mpfr_set (x1, y, (mpfr_rnd_t) rnd);
-+              /* x1 is the rounded value and inex1 the ternary value,
-+                 assuming that the exponent argument is 0 (this is the
-+                 rounded significand of the final result, assuming an
-+                 unbounded exponent range). The multiplication by a
-+                 power of 2 is exact, unless underflow/overflow occurs.
-+                 The tests on the exponent below avoid integer overflows
-+                 (ep[i] may take extreme values). */
-+              e = mpfr_get_exp (x1);
-+              mpfr_clear_flags ();
-+              if (j != 0 && ep[i] < __gmpfr_emin - e)  /* underflow */
-+                {
-+                  mpfr_rnd_t r =
-+                    (rnd == MPFR_RNDN &&
-+                     (ep[i] < __gmpfr_emin - mpfr_get_exp (y) - 1 ||
-+                      IS_POW2 (sign * j))) ?
-+                    MPFR_RNDZ : (mpfr_rnd_t) rnd;
-+                  inex1 = mpfr_underflow (x1, r, sign);
-+                  flags1 = __gmpfr_flags;
-+                }
-+              else if (j != 0 && ep[i] > __gmpfr_emax - e)  /* overflow */
-+                {
-+                  inex1 = mpfr_overflow (x1, (mpfr_rnd_t) rnd, sign);
-+                  flags1 = __gmpfr_flags;
-+                }
-+              else
-+                {
-+                  if (j != 0)
-+                    mpfr_set_exp (x1, ep[i] + e);
-+                  flags1 = inex1 != 0 ? MPFR_FLAGS_INEXACT : 0;
-+                }
-+            }
-+
-+          /* Test mpfr_set_sj_2exp */
-+          mpfr_clear_flags ();
-+          inex2 = mpfr_set_sj_2exp (x2, j, em, (mpfr_rnd_t) rnd);
-+          flags2 = __gmpfr_flags;
-+
-+          if (! (flags1 == flags2 && SAME_SIGN (inex1, inex2) &&
-+                 mpfr_equal_p (x1, x2)))
-+            {
-+              s = 's';
-+              goto err_extreme;
-+            }
-+
-+          if (j < 0)
-+            continue;
-+
-+          /* Test mpfr_set_uj_2exp */
-+          mpfr_clear_flags ();
-+          inex2 = mpfr_set_uj_2exp (x2, j, em, (mpfr_rnd_t) rnd);
-+          flags2 = __gmpfr_flags;
-+
-+          if (! (flags1 == flags2 && SAME_SIGN (inex1, inex2) &&
-+                 mpfr_equal_p (x1, x2)))
-+            {
-+              s = 'u';
-+            err_extreme:
-+              printf ("Error in extreme mpfr_set_%cj_2exp for i=%d j=%d %s\n",
-+                      s, i, j, mpfr_print_rnd_mode ((mpfr_rnd_t) rnd));
-+              printf ("emin=%" MPFR_EXP_FSPEC "d "
-+                      "emax=%" MPFR_EXP_FSPEC "d\n",
-+                      (mpfr_eexp_t) __gmpfr_emin,
-+                      (mpfr_eexp_t) __gmpfr_emax);
-+#ifdef MPFR_PRINTF_MAXLM
-+              printf ("e = %" MPFR_PRINTF_MAXLM "d\n", em);
-+#endif
-+              printf ("Expected ");
-+              mpfr_dump (x1);
-+              printf ("with inex = %d and flags =", inex1);
-+              flags_out (flags1);
-+              printf ("Got      ");
-+              mpfr_dump (x2);
-+              printf ("with inex = %d and flags =", inex2);
-+              flags_out (flags2);
-+              exit (1);
-+            }
++          printf ("Error 1 in check_huge\n");
++          printf ("Expected 0.10001000000000000000000000000000E5\n");
++          printf ("Got      ");
++          mpfr_dump (x);
++          exit (1);
 +        }
++      mpz_clear (z);
 +
-+  mpfr_clears (x1, x2, y, (mpfr_ptr) 0);
-+}
++      mpz_init_set_ui (z, 17);
++      mpz_mul_2exp (z, z, 0xffffffb0);
++      mpz_add_ui (z, z, 1);
++      mpfr_set_z_2exp (x, z, -1, MPFR_RNDN);
++      if (! MPFR_IS_INF (x) || MPFR_IS_NEG (x))
++        {
++          printf ("Error 2 in check_huge\n");
++          printf ("Expected @Inf@\n");
++          printf ("Got      ");
++          mpfr_dump (x);
++          exit (1);
++        }
++      mpz_clear (z);
 +
-+static void
-+test_2exp_extreme (void)
-+{
-+  mpfr_exp_t emin, emax;
-+
-+  emin = mpfr_get_emin ();
-+  emax = mpfr_get_emax ();
-+
-+  set_emin (MPFR_EMIN_MIN);
-+  set_emax (MPFR_EMAX_MAX);
-+  test_2exp_extreme_aux ();
-+
-+  set_emin (-REXP);
-+  set_emax (REXP);
-+  test_2exp_extreme_aux ();
-+
-+  set_emin (emin);
-+  set_emax (emax);
++      mpfr_clear (x);
++    }
 +}
 +
  int
  main (int argc, char *argv[])
  {
-@@ -185,6 +333,7 @@
-   check_set_uj_2exp ();
-   check_set_sj ();
-   check_set_sj_2exp ();
-+  test_2exp_extreme ();
+@@ -147,11 +247,13 @@
  
+   tests_start_mpfr ();
+ 
+-  check (0, MPFR_RNDN);
++  check (0, MPFR_RNDN, 0);
+   for (j = 0; j < 200000; j++)
+-    check (randlimb () & LONG_MAX, RND_RAND ());
++    check (randlimb () & LONG_MAX, RND_RAND (), j < 200);
+   check0 ();
+ 
++  check_huge ();
++
    tests_end_mpfr ();
+ 
    return 0;

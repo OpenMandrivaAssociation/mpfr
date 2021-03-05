@@ -1,100 +1,117 @@
-diff -Naurd mpfr-4.0.2-a/PATCHES mpfr-4.0.2-b/PATCHES
---- mpfr-4.0.2-a/PATCHES	2020-04-03 13:54:03.807946879 +0000
-+++ mpfr-4.0.2-b/PATCHES	2020-04-03 13:54:03.891945830 +0000
+diff -Naurd mpfr-4.1.0-a/PATCHES mpfr-4.1.0-b/PATCHES
+--- mpfr-4.1.0-a/PATCHES	2021-02-11 12:53:38.382850990 +0000
++++ mpfr-4.1.0-b/PATCHES	2021-02-11 12:53:38.426850512 +0000
 @@ -0,0 +1 @@
-+sub1-ubftest
-diff -Naurd mpfr-4.0.2-a/VERSION mpfr-4.0.2-b/VERSION
---- mpfr-4.0.2-a/VERSION	2020-03-30 16:50:17.096230810 +0000
-+++ mpfr-4.0.2-b/VERSION	2020-04-03 13:54:03.891945830 +0000
++jn-interm-zero
+diff -Naurd mpfr-4.1.0-a/VERSION mpfr-4.1.0-b/VERSION
+--- mpfr-4.1.0-a/VERSION	2021-02-11 12:52:52.563350183 +0000
++++ mpfr-4.1.0-b/VERSION	2021-02-11 12:53:38.426850512 +0000
 @@ -1 +1 @@
--4.0.2-p6
-+4.0.2-p7
-diff -Naurd mpfr-4.0.2-a/src/mpfr.h mpfr-4.0.2-b/src/mpfr.h
---- mpfr-4.0.2-a/src/mpfr.h	2020-03-30 16:50:17.096230810 +0000
-+++ mpfr-4.0.2-b/src/mpfr.h	2020-04-03 13:54:03.891945830 +0000
+-4.1.0-p6
++4.1.0-p7
+diff -Naurd mpfr-4.1.0-a/src/jyn_asympt.c mpfr-4.1.0-b/src/jyn_asympt.c
+--- mpfr-4.1.0-a/src/jyn_asympt.c	2020-07-10 10:33:32.000000000 +0000
++++ mpfr-4.1.0-b/src/jyn_asympt.c	2021-02-11 12:53:38.410850685 +0000
+@@ -69,6 +69,8 @@
+   MPFR_ZIV_INIT (loop, w);
+   for (;;)
+     {
++      int ok = 1;
++
+       mpfr_set_prec (c, w);
+       mpfr_init2 (s, w);
+       mpfr_init2 (P, w);
+@@ -92,6 +94,13 @@
+       /* now s approximates sin(z)+cos(z), and c approximates sin(z)-cos(z),
+          with total absolute error bounded by 2^(1-w). */
+ 
++      /* if s or c is zero, MPFR_GET_EXP will fail below */
++      if (MPFR_IS_ZERO(s) || MPFR_IS_ZERO(c))
++        {
++          ok = 0;
++          goto clear;
++        }
++
+       /* precompute 1/(8|z|) */
+       mpfr_si_div (iz, MPFR_IS_POS(z) ? 1 : -1, z, MPFR_RNDN);   /* err <= 1 */
+       mpfr_div_2ui (iz, iz, 3, MPFR_RNDN);
+@@ -257,6 +266,9 @@
+       err = (err >= err2) ? err + 1 : err2 + 1;
+       /* the absolute error on c is bounded by 2^(err - w) */
+ 
++      err -= MPFR_GET_EXP (c);
++
++    clear:
+       mpfr_clear (s);
+       mpfr_clear (P);
+       mpfr_clear (Q);
+@@ -266,8 +278,7 @@
+       mpfr_clear (err_s);
+       mpfr_clear (err_u);
+ 
+-      err -= MPFR_GET_EXP (c);
+-      if (MPFR_LIKELY (MPFR_CAN_ROUND (c, w - err, MPFR_PREC(res), r)))
++      if (ok && MPFR_LIKELY (MPFR_CAN_ROUND (c, w - err, MPFR_PREC(res), r)))
+         break;
+       if (diverge != 0)
+         {
+diff -Naurd mpfr-4.1.0-a/src/mpfr.h mpfr-4.1.0-b/src/mpfr.h
+--- mpfr-4.1.0-a/src/mpfr.h	2021-02-11 12:52:52.559350226 +0000
++++ mpfr-4.1.0-b/src/mpfr.h	2021-02-11 12:53:38.422850555 +0000
 @@ -27,7 +27,7 @@
  #define MPFR_VERSION_MAJOR 4
- #define MPFR_VERSION_MINOR 0
- #define MPFR_VERSION_PATCHLEVEL 2
--#define MPFR_VERSION_STRING "4.0.2-p6"
-+#define MPFR_VERSION_STRING "4.0.2-p7"
+ #define MPFR_VERSION_MINOR 1
+ #define MPFR_VERSION_PATCHLEVEL 0
+-#define MPFR_VERSION_STRING "4.1.0-p6"
++#define MPFR_VERSION_STRING "4.1.0-p7"
  
  /* User macros:
     MPFR_USE_FILE:        Define it to make MPFR define functions dealing
-diff -Naurd mpfr-4.0.2-a/src/version.c mpfr-4.0.2-b/src/version.c
---- mpfr-4.0.2-a/src/version.c	2020-03-30 16:50:17.096230810 +0000
-+++ mpfr-4.0.2-b/src/version.c	2020-04-03 13:54:03.891945830 +0000
+diff -Naurd mpfr-4.1.0-a/src/version.c mpfr-4.1.0-b/src/version.c
+--- mpfr-4.1.0-a/src/version.c	2021-02-11 12:52:52.559350226 +0000
++++ mpfr-4.1.0-b/src/version.c	2021-02-11 12:53:38.426850512 +0000
 @@ -25,5 +25,5 @@
  const char *
  mpfr_get_version (void)
  {
--  return "4.0.2-p6";
-+  return "4.0.2-p7";
+-  return "4.1.0-p6";
++  return "4.1.0-p7";
  }
-diff -Naurd mpfr-4.0.2-a/tests/tsub.c mpfr-4.0.2-b/tests/tsub.c
---- mpfr-4.0.2-a/tests/tsub.c	2020-03-30 13:09:17.490071686 +0000
-+++ mpfr-4.0.2-b/tests/tsub.c	2020-04-03 13:54:03.827946629 +0000
-@@ -1203,9 +1203,9 @@
-   for (j = 0; j < numberof (e); j++)
-     {
-       inexact = mpfr_set_exp_t (ee, e[j], MPFR_RNDN);
--      MPFR_ASSERTD (inexact == 0);
-+      MPFR_ASSERTN (inexact == 0);
-       inexact = mpfr_get_z (MPFR_ZEXP (p[0]), ee, MPFR_RNDN);
--      MPFR_ASSERTD (inexact == 0);
-+      MPFR_ASSERTN (inexact == 0);
-       mpz_sub_ui (MPFR_ZEXP (p[0]), MPFR_ZEXP (p[0]), kn);
+diff -Naurd mpfr-4.1.0-a/tests/tj0.c mpfr-4.1.0-b/tests/tj0.c
+--- mpfr-4.1.0-a/tests/tj0.c	2020-01-08 18:11:13.000000000 +0000
++++ mpfr-4.1.0-b/tests/tj0.c	2021-02-11 12:53:38.410850685 +0000
+@@ -27,6 +27,25 @@
+ #define REDUCE_EMAX 262143 /* otherwise arg. reduction is too expensive */
+ #include "tgeneric.c"
  
-       for (k = -kn; k <= kn; k++)
-@@ -1266,23 +1266,31 @@
-     {
-       static int v[4] = { 26, 1, 256, 231 };
++/* bug found in revision 14399 with GMP_CHECK_RANDOMIZE=1612721106588971 */
++static void
++bug20210208 (void)
++{
++  mpfr_t x, y;
++  int inex;
++
++  mpfr_init2 (x, 79);
++  mpfr_init2 (y, 1);
++  mpfr_set_str (x, "2.552495117262005805960565e+02", 10, MPFR_RNDN);
++  mpfr_clear_flags ();
++  inex = mpfr_j0 (y, x, MPFR_RNDZ);
++  MPFR_ASSERTN (mpfr_cmp_si_2exp (y, -1, -5) == 0);
++  MPFR_ASSERTN (inex > 0);
++  MPFR_ASSERTN (__gmpfr_flags == MPFR_FLAGS_INEXACT);
++  mpfr_clear (x);
++  mpfr_clear (y);
++}
++
+ int
+ main (int argc, char *argv[])
+ {
+@@ -35,6 +54,8 @@
  
--      mpfr_init2 (p[i], i < 4 ? 5 + (randlimb () % 128) : 256);
-+      mpfr_init2 (p[i], i < 4 ? 8 + (randlimb () % 128) : 256);
-       if (i < 4)
--        mpfr_set_si_2exp (p[i], v[i], -5, MPFR_RNDN);
-+        {
-+          inexact = mpfr_set_si_2exp (p[i], v[i], -5, MPFR_RNDN);
-+          MPFR_ASSERTN (inexact == 0);
-+        }
-       else
-         {
--          mpfr_set_si_2exp (p[i], 1, 200, MPFR_RNDN);
--          mpfr_add (p[i], p[i], p[i-4], MPFR_RNDN);
-+          inexact = mpfr_set_si_2exp (p[i], 1, 200, MPFR_RNDN);
-+          MPFR_ASSERTN (inexact == 0);
-+          inexact = mpfr_add (p[i], p[i], p[i-4], MPFR_RNDN);
-+          MPFR_ASSERTN (inexact == 0);
-         }
-       ex[i] = mpfr_get_exp (p[i]) + 5;
--      MPFR_ASSERTD (ex[i] >= 0);
-+      MPFR_ASSERTN (ex[i] >= 0);
-     }
-   mpfr_inits2 (3, p[8], p[9], p[10], (mpfr_ptr) 0);
--  mpfr_set_si_2exp (p[8], 1, 0, MPFR_RNDN);
-+  inexact = mpfr_set_si_2exp (p[8], 1, 0, MPFR_RNDN);
-+  MPFR_ASSERTN (inexact == 0);
-   ex[8] = 5;
--  mpfr_set_si_2exp (p[9], 1, 0, MPFR_RNDN);  /* will be epsilon */
-+  inexact = mpfr_set_si_2exp (p[9], 1, 0, MPFR_RNDN);  /* will be epsilon */
-+  MPFR_ASSERTN (inexact == 0);
-   ex[9] = 0;
--  mpfr_set_si_2exp (p[10], 7, 0, MPFR_RNDN);
-+  inexact = mpfr_set_si_2exp (p[10], 7, 0, MPFR_RNDN);
-+  MPFR_ASSERTN (inexact == 0);
-   ex[10] = 5;
+   tests_start_mpfr ();
  
-   for (i = 0; i < 11; i++)
-@@ -1294,9 +1302,9 @@
-   for (j = 0; j < numberof (e); j++)
-     {
-       inexact = mpfr_set_exp_t (ee, e[j], MPFR_RNDN);
--      MPFR_ASSERTD (inexact == 0);
-+      MPFR_ASSERTN (inexact == 0);
-       inexact = mpfr_get_z (MPFR_ZEXP (p[0]), ee, MPFR_RNDN);
--      MPFR_ASSERTD (inexact == 0);
-+      MPFR_ASSERTN (inexact == 0);
-       for (i = 1; i < 11; i++)
-         mpz_set (MPFR_ZEXP (p[i]), MPFR_ZEXP (p[0]));
-       for (i = 0; i < 11; i++)
++  bug20210208 ();
++
+   mpfr_init (x);
+   mpfr_init (y);
+ 

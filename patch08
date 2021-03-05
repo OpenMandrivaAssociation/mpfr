@@ -1,0 +1,116 @@
+diff -Naurd mpfr-4.1.0-a/PATCHES mpfr-4.1.0-b/PATCHES
+--- mpfr-4.1.0-a/PATCHES	2021-02-17 17:22:34.594973310 +0000
++++ mpfr-4.1.0-b/PATCHES	2021-02-17 17:22:34.702972090 +0000
+@@ -0,0 +1 @@
++digamma-interm-zero2
+diff -Naurd mpfr-4.1.0-a/VERSION mpfr-4.1.0-b/VERSION
+--- mpfr-4.1.0-a/VERSION	2021-02-11 12:53:38.426850512 +0000
++++ mpfr-4.1.0-b/VERSION	2021-02-17 17:22:34.702972090 +0000
+@@ -1 +1 @@
+-4.1.0-p7
++4.1.0-p8
+diff -Naurd mpfr-4.1.0-a/src/digamma.c mpfr-4.1.0-b/src/digamma.c
+--- mpfr-4.1.0-a/src/digamma.c	2021-02-11 12:52:52.547350357 +0000
++++ mpfr-4.1.0-b/src/digamma.c	2021-02-17 17:22:34.690972226 +0000
+@@ -173,16 +173,19 @@
+       mpfr_digamma (v, u, MPFR_RNDN);   /* error <= 1/2 ulp */
+       expv = MPFR_GET_EXP (v);
+       mpfr_sub (v, v, t, MPFR_RNDN);
+-      if (MPFR_GET_EXP (v) < MPFR_GET_EXP (t))
+-        e1 += MPFR_EXP(t) - MPFR_EXP(v); /* scale error for t wrt new v */
+-      /* now take into account the 1/2 ulp error for v */
+-      if (expv - MPFR_EXP(v) - 1 > e1)
+-        e1 = expv - MPFR_EXP(v) - 1;
+-      else
+-        e1 ++;
+-      e1 ++; /* rounding error for mpfr_sub */
+-      if (MPFR_CAN_ROUND (v, p - e1, MPFR_PREC(y), rnd_mode))
+-        break;
++      if (MPFR_NOTZERO(v))
++        {
++          if (MPFR_GET_EXP (v) < MPFR_GET_EXP (t))
++            e1 += MPFR_EXP(t) - MPFR_EXP(v); /* scale error for t wrt new v */
++          /* now take into account the 1/2 ulp error for v */
++          if (expv - MPFR_EXP(v) - 1 > e1)
++            e1 = expv - MPFR_EXP(v) - 1;
++          else
++            e1 ++;
++          e1 ++; /* rounding error for mpfr_sub */
++          if (MPFR_CAN_ROUND (v, p - e1, MPFR_PREC(y), rnd_mode))
++            break;
++        }
+       MPFR_ZIV_NEXT (loop, p);
+       mpfr_set_prec (t, p);
+       mpfr_set_prec (v, p);
+@@ -416,10 +419,8 @@
+         }
+     }
+ 
+-  if (MPFR_IS_NEG(x))
+-    inex = mpfr_digamma_reflection (y, x, rnd_mode);
+   /* if x < 1/2 we use the reflection formula */
+-  else if (MPFR_EXP(x) < 0)
++  if (MPFR_IS_NEG(x) || MPFR_EXP(x) < 0)
+     inex = mpfr_digamma_reflection (y, x, rnd_mode);
+   else
+     inex = mpfr_digamma_positive (y, x, rnd_mode);
+diff -Naurd mpfr-4.1.0-a/src/mpfr.h mpfr-4.1.0-b/src/mpfr.h
+--- mpfr-4.1.0-a/src/mpfr.h	2021-02-11 12:53:38.422850555 +0000
++++ mpfr-4.1.0-b/src/mpfr.h	2021-02-17 17:22:34.702972090 +0000
+@@ -27,7 +27,7 @@
+ #define MPFR_VERSION_MAJOR 4
+ #define MPFR_VERSION_MINOR 1
+ #define MPFR_VERSION_PATCHLEVEL 0
+-#define MPFR_VERSION_STRING "4.1.0-p7"
++#define MPFR_VERSION_STRING "4.1.0-p8"
+ 
+ /* User macros:
+    MPFR_USE_FILE:        Define it to make MPFR define functions dealing
+diff -Naurd mpfr-4.1.0-a/src/version.c mpfr-4.1.0-b/src/version.c
+--- mpfr-4.1.0-a/src/version.c	2021-02-11 12:53:38.426850512 +0000
++++ mpfr-4.1.0-b/src/version.c	2021-02-17 17:22:34.702972090 +0000
+@@ -25,5 +25,5 @@
+ const char *
+ mpfr_get_version (void)
+ {
+-  return "4.1.0-p7";
++  return "4.1.0-p8";
+ }
+diff -Naurd mpfr-4.1.0-a/tests/tdigamma.c mpfr-4.1.0-b/tests/tdigamma.c
+--- mpfr-4.1.0-a/tests/tdigamma.c	2021-02-11 12:52:52.547350357 +0000
++++ mpfr-4.1.0-b/tests/tdigamma.c	2021-02-17 17:22:34.690972226 +0000
+@@ -110,6 +110,26 @@
+   mpfr_clear (y);
+ }
+ 
++/* another test that fails with GMP_CHECK_RANDOMIZE=1613197421465830
++   on revision 14429 */
++static void
++bug20210215 (void)
++{
++  mpfr_t x, y;
++  int inex;
++
++  mpfr_init2 (x, 510);
++  mpfr_init2 (y, 4);
++  mpfr_set_str (x, "-8.2923051438433494998166335341807999322052669984208422481227138906096000469898717007386115912802685588348601663465077353194268894939972221117314512518182580e+35", 10, MPFR_RNDN);
++  mpfr_clear_flags ();
++  inex = mpfr_digamma (y, x, MPFR_RNDU);
++  MPFR_ASSERTN (mpfr_cmp_ui0 (y, 88) == 0);
++  MPFR_ASSERTN (inex > 0);
++  MPFR_ASSERTN (__gmpfr_flags == MPFR_FLAGS_INEXACT);
++  mpfr_clear (x);
++  mpfr_clear (y);
++}
++
+ int
+ main (int argc, char *argv[])
+ {
+@@ -118,6 +138,7 @@
+   special ();
+   bug20210206 ();
+   bug20210208 ();
++  bug20210215 ();
+ 
+   test_generic (MPFR_PREC_MIN, 200, 20);
+ 

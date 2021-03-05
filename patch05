@@ -1,206 +1,155 @@
-diff -Naurd mpfr-4.0.2-a/PATCHES mpfr-4.0.2-b/PATCHES
---- mpfr-4.0.2-a/PATCHES	2020-03-30 16:31:45.813415121 +0000
-+++ mpfr-4.0.2-b/PATCHES	2020-03-30 16:33:54.623893528 +0000
+diff -Naurd mpfr-4.1.0-a/PATCHES mpfr-4.1.0-b/PATCHES
+--- mpfr-4.1.0-a/PATCHES	2021-02-11 12:50:22.384987438 +0000
++++ mpfr-4.1.0-b/PATCHES	2021-02-11 12:50:22.424987002 +0000
 @@ -0,0 +1 @@
-+const
-diff -Naurd mpfr-4.0.2-a/VERSION mpfr-4.0.2-b/VERSION
---- mpfr-4.0.2-a/VERSION	2020-03-30 13:09:17.502071540 +0000
-+++ mpfr-4.0.2-b/VERSION	2020-03-30 15:17:31.535330224 +0000
++digamma-hugemem
+diff -Naurd mpfr-4.1.0-a/VERSION mpfr-4.1.0-b/VERSION
+--- mpfr-4.1.0-a/VERSION	2021-02-11 12:48:27.370242746 +0000
++++ mpfr-4.1.0-b/VERSION	2021-02-11 12:50:22.424987002 +0000
 @@ -1 +1 @@
--4.0.2-p4
-+4.0.2-p5
-diff -Naurd mpfr-4.0.2-a/acinclude.m4 mpfr-4.0.2-b/acinclude.m4
---- mpfr-4.0.2-a/acinclude.m4	2019-01-27 18:30:16.000000000 +0000
-+++ mpfr-4.0.2-b/acinclude.m4	2019-01-27 18:30:16.000000000 +0000
-@@ -438,12 +438,14 @@
-   AC_MSG_WARN([platform and/or document the behavior.])
- fi
+-4.1.0-p4
++4.1.0-p5
+diff -Naurd mpfr-4.1.0-a/src/digamma.c mpfr-4.1.0-b/src/digamma.c
+--- mpfr-4.1.0-a/src/digamma.c	2020-06-18 17:17:18.000000000 +0000
++++ mpfr-4.1.0-b/src/digamma.c	2021-02-11 12:50:22.412987133 +0000
+@@ -214,19 +214,27 @@
+     (("x[%Pu]=%.*Rg rnd=%d", mpfr_get_prec(x), mpfr_log_prec, x, rnd_mode),
+      ("y[%Pu]=%.*Rg inexact=%d", mpfr_get_prec(y), mpfr_log_prec, y, inex));
  
--dnl Check if the chars '0' to '9' are consecutive values
-+dnl Check if the chars '0' to '9', 'a' to 'z', and 'A' to 'Z' are
-+dnl consecutive values.
-+dnl The const is necessary with GCC's "-Wwrite-strings -Werror".
- AC_MSG_CHECKING([if charset has consecutive values])
- AC_RUN_IFELSE([AC_LANG_PROGRAM([[
--char *number = "0123456789";
--char *lower  = "abcdefghijklmnopqrstuvwxyz";
--char *upper  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-+const char *number = "0123456789";
-+const char *lower  = "abcdefghijklmnopqrstuvwxyz";
-+const char *upper  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
- ]],[[
-  int i;
-  unsigned char *p;
-diff -Naurd mpfr-4.0.2-a/configure mpfr-4.0.2-b/configure
---- mpfr-4.0.2-a/configure	2019-01-31 20:43:19.000000000 +0000
-+++ mpfr-4.0.2-b/configure	2020-03-30 16:33:29.340190160 +0000
-@@ -15868,9 +15868,9 @@
-   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
- /* end confdefs.h.  */
+-  /* compute a precision q such that x+1 is exact */
+-  if (MPFR_PREC(x) < MPFR_GET_EXP(x))
+-    q = MPFR_EXP(x);
+-  else
+-    q = MPFR_PREC(x) + 1;
+-
+-  /* for very large x, use |digamma(x) - log(x)| < 1/x < 2^(1-EXP(x)) */
+-  if (MPFR_PREC(y) + 10 < MPFR_EXP(x))
++  /* For very large x, use |digamma(x) - log(x)| < 1/x < 2^(1-EXP(x)).
++     However, for a fixed value of GUARD, MPFR_CAN_ROUND() might fail
++     with probability 1/2^GUARD, in which case the default code will
++     fail since it requires x+1 to be exact, thus a huge precision if
++     x is huge. There are two workarounds:
++     * either perform a Ziv's loop, by increasing GUARD at each step.
++       However, this might fail if x is moderately large, in which case
++       more terms of the asymptotic expansion would be needed.
++     * implement a full asymptotic expansion (with Ziv's loop). */
++#define GUARD 30
++  if (MPFR_PREC(y) + GUARD < MPFR_EXP(x))
+     {
+       /* this ensures EXP(x) >= 3, thus x >= 4, thus log(x) > 1 */
+-      mpfr_init2 (t, MPFR_PREC(y) + 10);
+-      mpfr_log (t, x, MPFR_RNDZ);
+-      if (MPFR_CAN_ROUND (t, MPFR_PREC(y) + 10, MPFR_PREC(y), rnd_mode))
++      mpfr_init2 (t, MPFR_PREC(y) + GUARD);
++      mpfr_log (t, x, MPFR_RNDN);
++      /* |t - digamma(x)| <= 1/2*ulp(t) + |digamma(x) - log(x)|
++                          <= 1/2*ulp(t) + 2^(1-EXP(x))
++                          <= 1/2*ulp(t) + 2^(-PREC(y)-GUARD)
++                          <= ulp(t)
++         since |t| >= 1 thus ulp(t) >= 2^(1-PREC(y)-GUARD) */
++      if (MPFR_CAN_ROUND (t, MPFR_PREC(y) + GUARD, MPFR_PREC(y), rnd_mode))
+         {
+           inex = mpfr_set (y, t, rnd_mode);
+           mpfr_clear (t);
+@@ -235,6 +243,21 @@
+       mpfr_clear (t);
+     }
  
--char *number = "0123456789";
--char *lower  = "abcdefghijklmnopqrstuvwxyz";
--char *upper  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-+const char *number = "0123456789";
-+const char *lower  = "abcdefghijklmnopqrstuvwxyz";
-+const char *upper  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
++  /* compute a precision q such that x+1 is exact */
++  if (MPFR_PREC(x) < MPFR_GET_EXP(x))
++    {
++      /* The goal of the first assertion is to let the compiler ignore
++         the second one when MPFR_EMAX_MAX <= MPFR_PREC_MAX. */
++      MPFR_ASSERTD (MPFR_EXP(x) <= MPFR_EMAX_MAX);
++      MPFR_ASSERTN (MPFR_EXP(x) <= MPFR_PREC_MAX);
++      q = MPFR_EXP(x);
++    }
++  else
++    q = MPFR_PREC(x) + 1;
++
++  /* FIXME: q can be much too large, e.g. equal to the maximum exponent! */
++  MPFR_LOG_MSG (("q=%Pu\n", q));
++
+   mpfr_init2 (x_plus_j, q);
  
- int
- main (void)
-diff -Naurd mpfr-4.0.2-a/src/mpfr.h mpfr-4.0.2-b/src/mpfr.h
---- mpfr-4.0.2-a/src/mpfr.h	2020-03-30 13:09:17.498071589 +0000
-+++ mpfr-4.0.2-b/src/mpfr.h	2020-03-30 15:17:31.535330224 +0000
+   mpfr_init2 (t, p);
+diff -Naurd mpfr-4.1.0-a/src/mpfr.h mpfr-4.1.0-b/src/mpfr.h
+--- mpfr-4.1.0-a/src/mpfr.h	2021-02-11 12:48:27.366242791 +0000
++++ mpfr-4.1.0-b/src/mpfr.h	2021-02-11 12:50:22.424987002 +0000
 @@ -27,7 +27,7 @@
  #define MPFR_VERSION_MAJOR 4
- #define MPFR_VERSION_MINOR 0
- #define MPFR_VERSION_PATCHLEVEL 2
--#define MPFR_VERSION_STRING "4.0.2-p4"
-+#define MPFR_VERSION_STRING "4.0.2-p5"
+ #define MPFR_VERSION_MINOR 1
+ #define MPFR_VERSION_PATCHLEVEL 0
+-#define MPFR_VERSION_STRING "4.1.0-p4"
++#define MPFR_VERSION_STRING "4.1.0-p5"
  
  /* User macros:
     MPFR_USE_FILE:        Define it to make MPFR define functions dealing
-diff -Naurd mpfr-4.0.2-a/src/version.c mpfr-4.0.2-b/src/version.c
---- mpfr-4.0.2-a/src/version.c	2020-03-30 13:09:17.502071540 +0000
-+++ mpfr-4.0.2-b/src/version.c	2020-03-30 15:17:31.535330224 +0000
+diff -Naurd mpfr-4.1.0-a/src/version.c mpfr-4.1.0-b/src/version.c
+--- mpfr-4.1.0-a/src/version.c	2021-02-11 12:48:27.370242746 +0000
++++ mpfr-4.1.0-b/src/version.c	2021-02-11 12:50:22.424987002 +0000
 @@ -25,5 +25,5 @@
  const char *
  mpfr_get_version (void)
  {
--  return "4.0.2-p4";
-+  return "4.0.2-p5";
+-  return "4.1.0-p4";
++  return "4.1.0-p5";
  }
-diff -Naurd mpfr-4.0.2-a/tests/tdiv.c mpfr-4.0.2-b/tests/tdiv.c
---- mpfr-4.0.2-a/tests/tdiv.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/tests/tdiv.c	2020-03-30 15:17:31.523330366 +0000
-@@ -23,7 +23,7 @@
- #include "mpfr-test.h"
+diff -Naurd mpfr-4.1.0-a/tests/tdigamma.c mpfr-4.1.0-b/tests/tdigamma.c
+--- mpfr-4.1.0-a/tests/tdigamma.c	2020-06-18 17:17:18.000000000 +0000
++++ mpfr-4.1.0-b/tests/tdigamma.c	2021-02-11 12:50:22.412987133 +0000
+@@ -49,12 +49,54 @@
+   mpfr_clear (y);
+ }
  
- static void
--check_equal (mpfr_srcptr a, mpfr_srcptr a2, char *s,
-+check_equal (mpfr_srcptr a, mpfr_srcptr a2, const char *s,
-              mpfr_srcptr b, mpfr_srcptr c, mpfr_rnd_t r)
++/* With some GMP_CHECK_RANDOMIZE values, test_generic triggers an error
++     tests_addsize(): too much memory (576460752303432776 bytes)
++  Each time on prec = 200, n = 3, xprec = 140.
++  The following test is a more general testcase.
++*/
++static void
++bug20210206 (void)
++{
++#define NPREC 4
++  mpfr_t x, y[NPREC], z;
++  mpfr_exp_t emin, emax;
++  int i, precx, precy[NPREC] = { 200, 400, 520, 1416 };
++
++  emin = mpfr_get_emin ();
++  emax = mpfr_get_emax ();
++  set_emin (MPFR_EMIN_MIN);
++  set_emax (MPFR_EMAX_MAX);
++
++  for (i = 0; i < NPREC; i++)
++    mpfr_init2 (y[i], precy[i]);
++  mpfr_init2 (z, precy[0]);
++
++  for (precx = MPFR_PREC_MIN; precx < 150; precx++)
++    {
++      mpfr_init2 (x, precx);
++      mpfr_setmax (x, __gmpfr_emax);
++      for (i = 0; i < NPREC; i++)
++        mpfr_digamma (y[i], x, MPFR_RNDA);
++      mpfr_set (z, y[1], MPFR_RNDA);
++      MPFR_ASSERTN (mpfr_equal_p (y[0], z));
++      mpfr_clear (x);
++    }
++
++  for (i = 0; i < NPREC; i++)
++    mpfr_clear (y[i]);
++  mpfr_clear (z);
++
++  set_emin (emin);
++  set_emax (emax);
++}
++
+ int
+ main (int argc, char *argv[])
  {
-   if (SAME_VAL (a, a2))
-diff -Naurd mpfr-4.0.2-a/tests/tfpif.c mpfr-4.0.2-b/tests/tfpif.c
---- mpfr-4.0.2-a/tests/tfpif.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/tests/tfpif.c	2020-03-30 15:17:31.523330366 +0000
-@@ -30,8 +30,8 @@
- static void
- doit (int argc, char *argv[], mpfr_prec_t p1, mpfr_prec_t p2)
- {
--  char *filenameCompressed = FILE_NAME_RW;
--  char *data = FILE_NAME_R;
-+  const char *filenameCompressed = FILE_NAME_RW;
-+  const char *data = FILE_NAME_R;
-   int status;
-   FILE *fh;
-   mpfr_t x[9];
-@@ -198,7 +198,7 @@
- static void
- check_bad (void)
- {
--  char *filenameCompressed = FILE_NAME_RW;
-+  const char *filenameCompressed = FILE_NAME_RW;
-   int status;
-   FILE *fh;
-   mpfr_t x;
-@@ -340,7 +340,7 @@
- static void
- extra (void)
- {
--  char *data = FILE_NAME_R2;
-+  const char *data = FILE_NAME_R2;
-   mpfr_t x;
-   FILE *fp;
-   int ret;
-diff -Naurd mpfr-4.0.2-a/tests/tmul_2exp.c mpfr-4.0.2-b/tests/tmul_2exp.c
---- mpfr-4.0.2-a/tests/tmul_2exp.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/tests/tmul_2exp.c	2020-03-30 15:17:31.523330366 +0000
-@@ -258,7 +258,7 @@
-   mpfr_exp_t old_emax;
-   mpfr_t x, y1, y2;
-   int neg, r, op;
--  static char *sop[4] = { "mul_2ui", "mul_2si", "div_2ui", "div_2si" };
-+  static const char *sop[4] = { "mul_2ui", "mul_2si", "div_2ui", "div_2si" };
+   tests_start_mpfr ();
  
-   old_emax = mpfr_get_emax ();
-   set_emax (emax);
-diff -Naurd mpfr-4.0.2-a/tests/trandom.c mpfr-4.0.2-b/tests/trandom.c
---- mpfr-4.0.2-a/tests/trandom.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/tests/trandom.c	2020-03-30 15:17:31.523330366 +0000
-@@ -185,7 +185,7 @@
-   {
-     gmp_randstate_t s;
-     mpfr_t x;
--    char *str = "0.1010111100000000000000000000000000000000E-32";
-+    const char *str = "0.1010111100000000000000000000000000000000E-32";
-     int k;
+   special ();
++  bug20210206 ();
  
-     gmp_randinit_default (s);
-diff -Naurd mpfr-4.0.2-a/tests/trint.c mpfr-4.0.2-b/tests/trint.c
---- mpfr-4.0.2-a/tests/trint.c	2019-01-25 02:00:06.000000000 +0000
-+++ mpfr-4.0.2-b/tests/trint.c	2020-03-30 15:17:31.523330366 +0000
-@@ -308,7 +308,7 @@
- #if __MPFR_STDC (199901L)
+   test_generic (MPFR_PREC_MIN, 200, 20);
  
- static void
--test_fct (double (*f)(double), int (*g)(), char *s, mpfr_rnd_t r)
-+test_fct (double (*f)(double), int (*g)(), const char *s, mpfr_rnd_t r)
- {
-   double d, y;
-   mpfr_t dd, yy;
-diff -Naurd mpfr-4.0.2-a/tests/tsum.c mpfr-4.0.2-b/tests/tsum.c
---- mpfr-4.0.2-a/tests/tsum.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/tests/tsum.c	2020-03-30 15:17:31.523330366 +0000
-@@ -285,7 +285,7 @@
- static void
- check_more_special (void)
- {
--  char *str[NC] = { "NaN", "+Inf", "-Inf", "+0", "-0", "+1", "-1" };
-+  const char *str[NC] = { "NaN", "+Inf", "-Inf", "+0", "-0", "+1", "-1" };
-   int i, r, k[NS];
-   mpfr_t c[NC], s[NS], sum;
-   mpfr_ptr p[NS];
-@@ -724,7 +724,7 @@
- {
-   mpfr_t sum, t[4];
-   mpfr_ptr p[4];
--  char *s[4] = {
-+  const char *s[4] = {
-     "0x1p1000",
-     "-0x0.fffffffffffff80000000000000001p1000",
-     "-0x1p947",
-@@ -771,7 +771,11 @@
- {
-   mpfr_t sum1, sum2, t[3];
-   mpfr_ptr p[3];
--  char *s[3] = { "0.10000111110101000010101011100001", "1E-100", "0.1E95" };
-+  const char *s[3] = {
-+    "0.10000111110101000010101011100001",
-+    "1E-100",
-+    "0.1E95"
-+  };
-   int i, r;
- 
-   mpfr_inits2 (58, sum1, sum2, (mpfr_ptr) 0);
-@@ -1268,7 +1272,7 @@
- {
-   mpfr_t r, t[4];
-   mpfr_ptr p[4];
--  char *s[4] = { "0.10E20", "0", "0.11E382", "0.10E826" };
-+  const char *s[4] = { "0.10E20", "0", "0.11E382", "0.10E826" };
-   int i;
- 
-   mpfr_init2 (r, 2);
-diff -Naurd mpfr-4.0.2-a/tests/turandom.c mpfr-4.0.2-b/tests/turandom.c
---- mpfr-4.0.2-a/tests/turandom.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/tests/turandom.c	2020-03-30 15:17:31.523330366 +0000
-@@ -526,7 +526,7 @@
- #define N 6
-   /* Run this program with the MPFR_REPROD_ABI_OUTPUT environment variable
-      set to get the array of strings. */
--  char *t[5 * N] = {
-+  const char *t[5 * N] = {
-     "1.0@-1",
-     "3.0@-1",
-     "7.0@-1",

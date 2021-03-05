@@ -1,97 +1,70 @@
-diff -Naurd mpfr-4.0.2-a/PATCHES mpfr-4.0.2-b/PATCHES
---- mpfr-4.0.2-a/PATCHES	2020-03-30 13:02:08.103248669 +0000
-+++ mpfr-4.0.2-b/PATCHES	2020-03-30 13:02:08.143248189 +0000
+diff -Naurd mpfr-4.1.0-a/PATCHES mpfr-4.1.0-b/PATCHES
+--- mpfr-4.1.0-a/PATCHES	2021-02-11 12:43:51.761257868 +0000
++++ mpfr-4.1.0-b/PATCHES	2021-02-11 12:43:51.801257430 +0000
 @@ -0,0 +1 @@
-+int-overflow
-diff -Naurd mpfr-4.0.2-a/VERSION mpfr-4.0.2-b/VERSION
---- mpfr-4.0.2-a/VERSION	2019-06-02 17:05:36.157226621 +0000
-+++ mpfr-4.0.2-b/VERSION	2020-03-30 13:02:08.143248189 +0000
++random_deviate
+diff -Naurd mpfr-4.1.0-a/VERSION mpfr-4.1.0-b/VERSION
+--- mpfr-4.1.0-a/VERSION	2021-02-11 12:40:40.119363040 +0000
++++ mpfr-4.1.0-b/VERSION	2021-02-11 12:43:51.801257430 +0000
 @@ -1 +1 @@
--4.0.2-p1
-+4.0.2-p2
-diff -Naurd mpfr-4.0.2-a/src/agm.c mpfr-4.0.2-b/src/agm.c
---- mpfr-4.0.2-a/src/agm.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/src/agm.c	2020-03-30 13:02:08.131248333 +0000
-@@ -220,7 +220,7 @@
-           mpfr_add (vf, u, v, MPFR_RNDN);  /* No overflow? */
-           mpfr_div_2ui (vf, vf, 1, MPFR_RNDN);
-           /* See proof in algorithms.tex */
--          if (4*eq > p)
-+          if (eq > p / 4)
-             {
-               mpfr_t w;
-               MPFR_BLOCK_DECL (flags3);
-diff -Naurd mpfr-4.0.2-a/src/mpfr.h mpfr-4.0.2-b/src/mpfr.h
---- mpfr-4.0.2-a/src/mpfr.h	2019-06-02 17:05:36.153226653 +0000
-+++ mpfr-4.0.2-b/src/mpfr.h	2020-03-30 13:02:08.143248189 +0000
+-4.1.0-p1
++4.1.0-p2
+diff -Naurd mpfr-4.1.0-a/src/mpfr.h mpfr-4.1.0-b/src/mpfr.h
+--- mpfr-4.1.0-a/src/mpfr.h	2021-02-11 12:40:40.115363084 +0000
++++ mpfr-4.1.0-b/src/mpfr.h	2021-02-11 12:43:51.801257430 +0000
 @@ -27,7 +27,7 @@
  #define MPFR_VERSION_MAJOR 4
- #define MPFR_VERSION_MINOR 0
- #define MPFR_VERSION_PATCHLEVEL 2
--#define MPFR_VERSION_STRING "4.0.2-p1"
-+#define MPFR_VERSION_STRING "4.0.2-p2"
+ #define MPFR_VERSION_MINOR 1
+ #define MPFR_VERSION_PATCHLEVEL 0
+-#define MPFR_VERSION_STRING "4.1.0-p1"
++#define MPFR_VERSION_STRING "4.1.0-p2"
  
  /* User macros:
     MPFR_USE_FILE:        Define it to make MPFR define functions dealing
-diff -Naurd mpfr-4.0.2-a/src/pow.c mpfr-4.0.2-b/src/pow.c
---- mpfr-4.0.2-a/src/pow.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/src/pow.c	2020-03-30 13:02:08.131248333 +0000
-@@ -34,8 +34,7 @@
-                    mpfr_rnd_t rnd_mode, int *inexact)
- {
-   mpz_t a, c;
--  mpfr_exp_t d, b;
--  unsigned long i;
-+  mpfr_exp_t d, b, i;
-   int res;
+diff -Naurd mpfr-4.1.0-a/src/random_deviate.c mpfr-4.1.0-b/src/random_deviate.c
+--- mpfr-4.1.0-a/src/random_deviate.c	2020-01-08 18:11:13.000000000 +0000
++++ mpfr-4.1.0-b/src/random_deviate.c	2021-02-11 12:43:51.789257562 +0000
+@@ -289,6 +289,7 @@
+   mpfr_random_size_t p = mpfr_get_prec (z); /* Number of bits in result */
+   mpz_t t;
+   int inex;
++  mpfr_exp_t negxe;
  
-   MPFR_ASSERTD (!MPFR_IS_SINGULAR (y));
-@@ -48,7 +47,9 @@
-   if (MPFR_IS_NEG (y))
-     return 0; /* x is not a power of two => x^-y is not exact */
- 
--  /* compute d such that y = c*2^d with c odd integer */
-+  /* Compute d such that y = c*2^d with c odd integer.
-+     Since c comes from a regular MPFR number, due to the constraints on the
-+     exponent and the precision, there can be no integer overflow below. */
-   mpz_init (c);
-   d = mpfr_get_z_2exp (c, y);
-   i = mpz_scan1 (c, 0);
-@@ -58,7 +59,9 @@
-   /* Since y is not an integer, d is necessarily < 0 */
-   MPFR_ASSERTD (d < 0);
- 
--  /* Compute a,b such that x=a*2^b */
-+  /* Compute a,b such that x=a*2^b.
-+     Since a comes from a regular MPFR number, due to the constrainst on the
-+     exponent and the precision, there can be no integer overflow below. */
-   mpz_init (a);
-   b = mpfr_get_z_2exp (a, x);
-   i = mpz_scan1 (a, 0);
-diff -Naurd mpfr-4.0.2-a/src/rem1.c mpfr-4.0.2-b/src/rem1.c
---- mpfr-4.0.2-a/src/rem1.c	2019-01-07 13:53:20.000000000 +0000
-+++ mpfr-4.0.2-b/src/rem1.c	2020-03-30 13:02:08.131248333 +0000
-@@ -100,9 +100,11 @@
-   mpz_abs (my, my);
-   q_is_odd = 0;
- 
--  /* divide my by 2^k if possible to make operations mod my easier */
-+  /* Divide my by 2^k if possible to make operations mod my easier.
-+     Since my comes from a regular MPFR number, due to the constraints on the
-+     exponent and the precision, there can be no integer overflow below. */
-   {
--    unsigned long k = mpz_scan1 (my, 0);
-+    mpfr_exp_t k = mpz_scan1 (my, 0);
-     ey += k;
-     mpz_fdiv_q_2exp (my, my, k);
-   }
-diff -Naurd mpfr-4.0.2-a/src/version.c mpfr-4.0.2-b/src/version.c
---- mpfr-4.0.2-a/src/version.c	2019-06-02 17:05:36.153226653 +0000
-+++ mpfr-4.0.2-b/src/version.c	2020-03-30 13:02:08.143248189 +0000
+   if (n == 0)
+     {
+@@ -370,14 +371,22 @@
+   mpz_setbit (t, 0);     /* Set the trailing bit so result is always inexact */
+   if (neg)
+     mpz_neg (t, t);
+-  /* Is -x->e representable as a mpfr_exp_t? */
+-  MPFR_ASSERTN (x->e <= (mpfr_uexp_t)(-1) >> 1);
++  /* Portable version of the negation of x->e, with a check of overflow. */
++  if (MPFR_UNLIKELY (x->e > MPFR_EXP_MAX))
++    {
++      /* Overflow, except when x->e = MPFR_EXP_MAX + 1 = - MPFR_EXP_MIN. */
++      MPFR_ASSERTN (MPFR_EXP_MIN + MPFR_EXP_MAX == -1 &&
++                    x->e == (mpfr_random_size_t) MPFR_EXP_MAX + 1);
++      negxe = MPFR_EXP_MIN;
++    }
++  else
++    negxe = - (mpfr_exp_t) x->e;
+   /*
+    * Let mpfr_set_z_2exp do all the work of rounding to the requested
+    * precision, setting overflow/underflow flags, and returning the right
+    * inexact value.
+    */
+-  inex = mpfr_set_z_2exp (z, t, -x->e, rnd);
++  inex = mpfr_set_z_2exp (z, t, negxe, rnd);
+   mpz_clear (t);
+   return inex;
+ }
+diff -Naurd mpfr-4.1.0-a/src/version.c mpfr-4.1.0-b/src/version.c
+--- mpfr-4.1.0-a/src/version.c	2021-02-11 12:40:40.119363040 +0000
++++ mpfr-4.1.0-b/src/version.c	2021-02-11 12:43:51.801257430 +0000
 @@ -25,5 +25,5 @@
  const char *
  mpfr_get_version (void)
  {
--  return "4.0.2-p1";
-+  return "4.0.2-p2";
+-  return "4.1.0-p1";
++  return "4.1.0-p2";
  }

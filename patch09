@@ -1,0 +1,135 @@
+diff -Naurd mpfr-4.1.0-a/PATCHES mpfr-4.1.0-b/PATCHES
+--- mpfr-4.1.0-a/PATCHES	2021-02-17 17:25:46.396981483 +0000
++++ mpfr-4.1.0-b/PATCHES	2021-02-17 17:25:46.440981068 +0000
+@@ -0,0 +1 @@
++jyn_asympt-interm-zero
+diff -Naurd mpfr-4.1.0-a/VERSION mpfr-4.1.0-b/VERSION
+--- mpfr-4.1.0-a/VERSION	2021-02-17 17:22:34.702972090 +0000
++++ mpfr-4.1.0-b/VERSION	2021-02-17 17:25:46.440981068 +0000
+@@ -1 +1 @@
+-4.1.0-p8
++4.1.0-p9
+diff -Naurd mpfr-4.1.0-a/src/jyn_asympt.c mpfr-4.1.0-b/src/jyn_asympt.c
+--- mpfr-4.1.0-a/src/jyn_asympt.c	2021-02-11 12:53:38.410850685 +0000
++++ mpfr-4.1.0-b/src/jyn_asympt.c	2021-02-17 17:25:46.424981219 +0000
+@@ -69,7 +69,7 @@
+   MPFR_ZIV_INIT (loop, w);
+   for (;;)
+     {
+-      int ok = 1;
++      int ok = 0;
+ 
+       mpfr_set_prec (c, w);
+       mpfr_init2 (s, w);
+@@ -96,10 +96,7 @@
+ 
+       /* if s or c is zero, MPFR_GET_EXP will fail below */
+       if (MPFR_IS_ZERO(s) || MPFR_IS_ZERO(c))
+-        {
+-          ok = 0;
+-          goto clear;
+-        }
++        goto clear; /* with ok=0 */
+ 
+       /* precompute 1/(8|z|) */
+       mpfr_si_div (iz, MPFR_IS_POS(z) ? 1 : -1, z, MPFR_RNDN);   /* err <= 1 */
+@@ -227,6 +224,9 @@
+           mpfr_sub (s, c, s, MPFR_RNDN);
+ #endif
+         }
++      if (MPFR_IS_ZERO(s))
++        goto clear; /* with ok=0 */
++      ok = 1;
+       if ((n & 2) != 0)
+         mpfr_neg (s, s, MPFR_RNDN);
+       if (MPFR_GET_EXP (s) > err)
+diff -Naurd mpfr-4.1.0-a/src/mpfr.h mpfr-4.1.0-b/src/mpfr.h
+--- mpfr-4.1.0-a/src/mpfr.h	2021-02-17 17:22:34.702972090 +0000
++++ mpfr-4.1.0-b/src/mpfr.h	2021-02-17 17:25:46.436981105 +0000
+@@ -27,7 +27,7 @@
+ #define MPFR_VERSION_MAJOR 4
+ #define MPFR_VERSION_MINOR 1
+ #define MPFR_VERSION_PATCHLEVEL 0
+-#define MPFR_VERSION_STRING "4.1.0-p8"
++#define MPFR_VERSION_STRING "4.1.0-p9"
+ 
+ /* User macros:
+    MPFR_USE_FILE:        Define it to make MPFR define functions dealing
+diff -Naurd mpfr-4.1.0-a/src/version.c mpfr-4.1.0-b/src/version.c
+--- mpfr-4.1.0-a/src/version.c	2021-02-17 17:22:34.702972090 +0000
++++ mpfr-4.1.0-b/src/version.c	2021-02-17 17:25:46.440981068 +0000
+@@ -25,5 +25,5 @@
+ const char *
+ mpfr_get_version (void)
+ {
+-  return "4.1.0-p8";
++  return "4.1.0-p9";
+ }
+diff -Naurd mpfr-4.1.0-a/tests/mpfr-test.h mpfr-4.1.0-b/tests/mpfr-test.h
+--- mpfr-4.1.0-a/tests/mpfr-test.h	2020-06-29 13:57:32.000000000 +0000
++++ mpfr-4.1.0-b/tests/mpfr-test.h	2021-02-17 17:25:46.424981219 +0000
+@@ -191,6 +191,8 @@
+ 
+ #define mpfr_cmp0(x,y) (MPFR_ASSERTN (!MPFR_IS_NAN (x) && !MPFR_IS_NAN (y)), mpfr_cmp (x,y))
+ #define mpfr_cmp_ui0(x,i) (MPFR_ASSERTN (!MPFR_IS_NAN (x)), mpfr_cmp_ui (x,i))
++#define mpfr_cmp_si_2exp0(x,i,e) (MPFR_ASSERTN (!MPFR_IS_NAN (x)), \
++                                  mpfr_cmp_si_2exp (x,i,e))
+ 
+ /* define CHECK_EXTERNAL if you want to check mpfr against another library
+    with correct rounding. You'll probably have to modify mpfr_print_raw()
+diff -Naurd mpfr-4.1.0-a/tests/tj1.c mpfr-4.1.0-b/tests/tj1.c
+--- mpfr-4.1.0-a/tests/tj1.c	2020-01-08 18:11:13.000000000 +0000
++++ mpfr-4.1.0-b/tests/tj1.c	2021-02-17 17:25:46.424981219 +0000
+@@ -55,14 +55,14 @@
+               /* since |x| is just above 2^e, |j1(x)| is just above 2^(e-1),
+                  thus y should be 2^(e-1) and the inexact flag should be
+                  of opposite sign of x */
+-              MPFR_ASSERTN(mpfr_cmp_si_2exp (y, sign, e - 1) == 0);
++              MPFR_ASSERTN(mpfr_cmp_si_2exp0 (y, sign, e - 1) == 0);
+               MPFR_ASSERTN(VSIGN (inex) * sign < 0);
+             }
+           else
+             {
+               /* here |y| should be 0.5*2^emin and the inexact flag should
+                  have the sign of x */
+-              MPFR_ASSERTN(mpfr_cmp_si_2exp (y, sign, e) == 0);
++              MPFR_ASSERTN(mpfr_cmp_si_2exp0 (y, sign, e) == 0);
+               MPFR_ASSERTN(VSIGN (inex) * sign > 0);
+             }
+         }
+@@ -72,6 +72,26 @@
+   mpfr_clear (y);
+ }
+ 
++/* a test that fails with GMP_CHECK_RANDOMIZE=1613146232984428
++   on revision 14429 */
++static void
++bug20210215 (void)
++{
++  mpfr_t x, y;
++  int inex;
++
++  mpfr_init2 (x, 221);
++  mpfr_init2 (y, 1);
++  mpfr_set_str (x, "1.6484611511696130037307738844228498447763863563070374544054791168614e+01", 10, MPFR_RNDN);
++  mpfr_clear_flags ();
++  inex = mpfr_j1 (y, x, MPFR_RNDZ);
++  MPFR_ASSERTN (mpfr_cmp_si_2exp0 (y, -1, -9) == 0);
++  MPFR_ASSERTN (inex > 0);
++  MPFR_ASSERTN (__gmpfr_flags == MPFR_FLAGS_INEXACT);
++  mpfr_clear (x);
++  mpfr_clear (y);
++}
++
+ int
+ main (int argc, char *argv[])
+ {
+@@ -79,6 +99,8 @@
+ 
+   tests_start_mpfr ();
+ 
++  bug20210215 ();
++
+   test_small ();
+ 
+   mpfr_init (x);
