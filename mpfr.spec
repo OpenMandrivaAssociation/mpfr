@@ -41,6 +41,7 @@ Patch10:	https://www.mpfr.org/mpfr-current/patch11
 Patch11:	https://www.mpfr.org/mpfr-current/patch12
 BuildRequires:	pkgconfig(gmp)
 BuildRequires:	autoconf-archive
+BuildRequires:	texinfo
 
 %description
 The MPFR library is a C library for multiple-precision
