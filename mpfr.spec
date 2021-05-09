@@ -36,6 +36,9 @@ Patch5:		https://www.mpfr.org/mpfr-current/patch06
 Patch6:		https://www.mpfr.org/mpfr-current/patch07
 Patch7:		https://www.mpfr.org/mpfr-current/patch08
 Patch8:		https://www.mpfr.org/mpfr-current/patch09
+Patch9:		https://www.mpfr.org/mpfr-current/patch10
+Patch10:	https://www.mpfr.org/mpfr-current/patch11
+Patch11:	https://www.mpfr.org/mpfr-current/patch12
 BuildRequires:	pkgconfig(gmp)
 BuildRequires:	autoconf-archive
 
@@ -115,18 +118,7 @@ fi
 %endif
 
 export LD_LIBRARY_PATH="%{buildroot}%{_libdir}"
-# (tpg) 2019-10-09 one test fail so let's move on
-#.. contents:: :depth: 2
-#FAIL: tcmp_ui
-#=============
-#Error 3 on mpfr_cmp_ui(x,17) in check_macros
-#(c = 2 instead of 1)
-#FAIL tcmp_ui (exit status: 1)
-#SKIP: tget_set_d64
-#==================
-#SKIP tget_set_d64
-
-make check ||:
+make check
 cat tests/test-suite.log
 
 cd tools/bench
@@ -173,23 +165,9 @@ fi
 rm -rf installed-docs
 mv %{buildroot}%{_docdir}/%{name} installed-docs
 
-# (tpg) on aarch64 tests takes forever
-%ifnarch aarch64
 %check
-# (tpg) 2019-10-09 one test fail so let's move on
-#.. contents:: :depth: 2
-#FAIL: tcmp_ui
-#=============
-#Error 3 on mpfr_cmp_ui(x,17) in check_macros
-#(c = 2 instead of 1)
-#FAIL tcmp_ui (exit status: 1)
-#SKIP: tget_set_d64
-#==================
-#SKIP tget_set_d64
-
-make check  ||:
+make check
 cat tests/test-suite.log
-%endif
 
 %files -n %{libname}
 %{_libdir}/libmpfr.so.%{major}*
