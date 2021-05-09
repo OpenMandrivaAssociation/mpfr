@@ -21,7 +21,7 @@
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	4.1.0
-Release:	2
+Release:	3
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
@@ -135,6 +135,16 @@ CFLAGS="%{optflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
 CXXFLAGS="%{optflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
 LDFLAGS="%{ldflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
 %endif
+
+%ifarch %{aarch64}
+# FIXME workaround for "make test" failure that also
+# results in hangs while building libstdc++
+# If you remove this, make sure "make test" succeeds
+# and is reasonably fast, and that gcc builds successfully.
+export CC=gcc
+export CXX=g++
+%endif
+
 %configure \
 	--enable-shared \
 	--enable-static \
