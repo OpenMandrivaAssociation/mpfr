@@ -13,7 +13,7 @@
 
 # (tpg) enable PGO build
 %ifnarch aarch64
-%bcond_without pgo
+%bcond_with pgo
 %else
 %bcond_with pgo
 %endif
@@ -21,7 +21,7 @@
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	4.1.0
-Release:	3
+Release:	4
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
@@ -39,6 +39,7 @@ Patch8:		https://www.mpfr.org/mpfr-current/patch09
 Patch9:		https://www.mpfr.org/mpfr-current/patch10
 Patch10:	https://www.mpfr.org/mpfr-current/patch11
 Patch11:	https://www.mpfr.org/mpfr-current/patch12
+Patch12:	https://www.mpfr.org/mpfr-current/patch13
 BuildRequires:	pkgconfig(gmp)
 BuildRequires:	autoconf-archive
 BuildRequires:	texinfo
