@@ -155,7 +155,13 @@ export CXX=g++
 %if %{with crosscompile}
 	--with-gmp-lib=%{_prefix}/%{_target_platform}/sys-root%{_libdir} \
 %endif
-	--enable-thread-safe || printf '%s\n' "configure failed, here's config.log:" && cat config.log && exit 1
+	--enable-thread-safe
+
+if [ "$?" != "0" ]; then
+	printf '%s\n' "configure failed, here's config.log:"
+	cat config.log
+	exit 1
+fi
 
 # (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
 # 2020-07-13 disable LTO on riscv
