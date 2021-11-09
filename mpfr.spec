@@ -21,7 +21,7 @@
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	4.1.0
-Release:	4
+Release:	5
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
@@ -97,7 +97,7 @@ LDFLAGS="%{ldflags} -fprofile-instr-generate" \
 %configure \
 	--enable-shared \
 	--enable-static \
-%ifarch %{ix86}
+%ifarch %{ix86} %{x86_64}
 	--disable-float128 \
 %endif
 %if %{with crosscompile}
@@ -142,6 +142,7 @@ LDFLAGS="%{ldflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
 # results in hangs while building libstdc++
 # If you remove this, make sure "make test" succeeds
 # and is reasonably fast, and that gcc builds successfully.
+# (tpg) 2021-11-09 tests still fails, so keep gcc on aarch64
 export CC=gcc
 export CXX=g++
 %endif
@@ -149,7 +150,7 @@ export CXX=g++
 %configure \
 	--enable-shared \
 	--enable-static \
-%ifarch %{ix86}
+%ifarch %{ix86} %{x86_64}
 	--disable-float128 \
 %endif
 %if %{with crosscompile}
@@ -187,7 +188,7 @@ cat tests/test-suite.log
 %files -n %{devname}
 %{_includedir}/mpfr.h
 %{_includedir}/mpf2mpfr.h
-%{_infodir}/mpfr.info*
+%doc %{_infodir}/mpfr.info*
 %{_libdir}/libmpfr.so
 %{_libdir}/pkgconfig/mpfr.pc
 
