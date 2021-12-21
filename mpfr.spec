@@ -12,16 +12,12 @@
 %global optflags %optflags -O3
 
 # (tpg) enable PGO build
-%ifnarch aarch64
-%bcond_with pgo
-%else
-%bcond_with pgo
-%endif
+%bcond_without pgo
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
 Version:	4.1.0
-Release:	5
+Release:	6
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
@@ -87,13 +83,11 @@ export CXX=clang++
 %endif
 
 %if %{with pgo}
-export LLVM_PROFILE_FILE=%{name}-%p.profile.d
 export LD_LIBRARY_PATH="$(pwd)"
-CFLAGS="%{optflags} -fprofile-instr-generate" \
-CXXFLAGS="%{optflags} -fprofile-instr-generate" \
-FFLAGS="$CFLAGS_PGO" \
-FCFLAGS="$CFLAGS_PGO" \
-LDFLAGS="%{ldflags} -fprofile-instr-generate" \
+
+CFLAGS="%{optflags} -fprofile-generate" \
+CXXFLAGS="%{optflags} -fprofile-generate" \
+LDFLAGS="%{build_ldflags} -fprofile-generate" \
 %configure \
 	--enable-shared \
 	--enable-static \
@@ -106,7 +100,7 @@ LDFLAGS="%{ldflags} -fprofile-instr-generate" \
 	--enable-thread-safe
 
 if [ "$?" != '0' ]; then
-    echo "configure failed, here's config.log:"
+    printf '%s\n' "configure failed, here's config.log:"
     cat config.log
     exit 1
 fi
@@ -114,27 +108,29 @@ fi
 # (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
 # 2020-07-13 disable LTO on riscv
 %ifnarch %{riscv}
-%make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{ldflags} -flto"
+%make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{build_ldflags} -flto"
 %else
 %make_build
 %endif
 
 export LD_LIBRARY_PATH="%{buildroot}%{_libdir}"
-make check
+make check ||:
 cat tests/test-suite.log
 
 cd tools/bench
 make bench
 cd -
+
 unset LD_LIBRARY_PATH
-unset LLVM_PROFILE_FILE
-llvm-profdata merge --output=%{name}.profile *.profile.d
+llvm-profdata merge --output=%{name}-llvm.profdata $(find . -name "*.profraw" -type f)
+PROFDATA="$(realpath %{name}-llvm.profdata)"
+rm -f *.profraw
 
 make clean
 
-CFLAGS="%{optflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
-CXXFLAGS="%{optflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
-LDFLAGS="%{ldflags} -fprofile-instr-use=$(realpath %{name}.profile)" \
+CFLAGS="%{optflags} -fprofile-use=$PROFDATA" \
+CXXFLAGS="%{optflags} -fprofile-use=$PROFDATA" \
+LDFLAGS="%{build_ldflags} -fprofile-use=$PROFDATA" \
 %endif
 
 %ifarch %{aarch64}
@@ -167,7 +163,7 @@ fi
 # (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
 # 2020-07-13 disable LTO on riscv
 %ifnarch %{riscv}
-%make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{ldflags} -flto"
+%make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{build_ldflags} -flto"
 %else
 %make_build
 %endif
