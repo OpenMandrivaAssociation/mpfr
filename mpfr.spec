@@ -4,12 +4,8 @@
 %define statname %mklibname %{name} -d -s
 %bcond_with crosscompile
 
-# (tpg) configure script is broken when LTO is used
-# so disable it and push LTO at make_build stage
-%define _disable_lto 1
-
 # (tpg) optimize it a bit
-%global optflags %optflags -O3
+%global optflags %{optflags} -O3
 
 # (tpg) enable PGO build
 %bcond_without pgo
@@ -85,12 +81,13 @@ export CXX=clang++
 %if %{with pgo}
 export LD_LIBRARY_PATH="$(pwd)"
 
-CFLAGS="%{optflags} -fprofile-generate" \
+CFLAGS="%{optflags} -fprofile-generate -mllvm -vp-counters-per-site=16" \
 CXXFLAGS="%{optflags} -fprofile-generate" \
 LDFLAGS="%{build_ldflags} -fprofile-generate" \
 %configure \
 	--enable-shared \
 	--enable-static \
+	--disable-assert \
 %ifarch %{ix86} %{x86_64}
 	--disable-float128 \
 %endif
@@ -105,13 +102,7 @@ if [ "$?" != '0' ]; then
     exit 1
 fi
 
-# (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
-# 2020-07-13 disable LTO on riscv
-%ifnarch %{riscv}
-%make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{build_ldflags} -flto"
-%else
 %make_build
-%endif
 
 export LD_LIBRARY_PATH="%{buildroot}%{_libdir}"
 make check ||:
@@ -132,7 +123,6 @@ CFLAGS="%{optflags} -fprofile-use=$PROFDATA" \
 CXXFLAGS="%{optflags} -fprofile-use=$PROFDATA" \
 LDFLAGS="%{build_ldflags} -fprofile-use=$PROFDATA" \
 %endif
-
 %ifarch %{aarch64}
 # FIXME workaround for "make test" failure that also
 # results in hangs while building libstdc++
@@ -142,10 +132,10 @@ LDFLAGS="%{build_ldflags} -fprofile-use=$PROFDATA" \
 export CC=gcc
 export CXX=g++
 %endif
-
 %configure \
 	--enable-shared \
 	--enable-static \
+	--disable-assert \
 %ifarch %{ix86} %{x86_64}
 	--disable-float128 \
 %endif
@@ -160,13 +150,7 @@ if [ "$?" != "0" ]; then
 	exit 1
 fi
 
-# (tpg) configure script is sensitive on LTO so disable it and re-enable on make stage
-# 2020-07-13 disable LTO on riscv
-%ifnarch %{riscv}
-%make_build CFLAGS="%{optflags} -flto" CXXFLAGS="%{optflags} -flto" LDFLAGS="%{build_ldflags} -flto"
-%else
 %make_build
-%endif
 
 %install
 %make_install
