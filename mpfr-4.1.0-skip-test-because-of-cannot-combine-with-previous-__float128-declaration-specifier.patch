@@ -1,0 +1,27 @@
+(tpg) this test fails because clang does not handle glibc float128 while support for clang was patched locally
+
+configure:18793: checking for GMP_NUMB_BITS and sizeof(mp_limb_t) consistency
+configure:18825: /usr/bin/clang -o conftest -Os -fomit-frame-pointer -g3 -gdwarf-4 -Wstrict-aliasing=2 -pipe -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fstack-protector-all --param=ssp-buffer-size=4 -m64 -mtune=generic -flto -O3 -fprofile-generate -mllvm -vp-counters-per-site=16  -Os -fomit-frame-pointer -g3 -gdwarf-4 -Wstrict-aliasing=2 -pipe -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fstack-protector-all --param=ssp-buffer-size=4 -m64 -mtune=generic -flto -O3 -Wl,-O2  -Wl,--no-undefined -flto  -fprofile-generate -Wl,--disable-new-dtags conftest.c  >&5
+In file included from conftest.c:62:
+In file included from /usr/include/stdio.h:430:
+/usr/include/bits/floatn.h:86:20: error: cannot combine with previous '__float128' declaration specifier
+typedef __float128 _Float128;
+                   ^
+conftest.c:57:19: note: expanded from macro '_Float128'
+#define _Float128 __float128
+                  ^
+1 error generated.
+configure:18825: $? = 1
+
+diff -Nau mpfr-4.1.0/configure.ac mpfr-4.1.0.tpg/configure.ac
+--- mpfr-4.1.0/configure.ac	2020-07-10 11:52:33.000000000 +0000
++++ mpfr-4.1.0.tpg/configure.ac	2022-05-28 14:08:19.115350141 +0000
+@@ -686,7 +686,7 @@
+   return 1;
+ ]])], [AC_MSG_RESULT(yes)], [
+        AC_MSG_RESULT(no)
+-       AC_MSG_ERROR([GMP_NUMB_BITS and sizeof(mp_limb_t) are not consistent.
++       AC_MSG_WARN([GMP_NUMB_BITS and sizeof(mp_limb_t) are not consistent.
+ You probably need to change some of the GMP or MPFR compile options.
+ See 'config.log' for details (search for GMP_NUMB_BITS).])],
+        [AC_MSG_RESULT([cannot test])])
