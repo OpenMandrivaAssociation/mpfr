@@ -12,26 +12,13 @@
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
-Version:	4.1.0
-Release:	7
+Version:	4.1.1
+Release:	1
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
-Patch0:		https://www.mpfr.org/mpfr-current/patch01
-Patch1:		https://www.mpfr.org/mpfr-current/patch02
-Patch2:		https://www.mpfr.org/mpfr-current/patch03
-Patch3:		https://www.mpfr.org/mpfr-current/patch04
-Patch4:		https://www.mpfr.org/mpfr-current/patch05
-Patch5:		https://www.mpfr.org/mpfr-current/patch06
-Patch6:		https://www.mpfr.org/mpfr-current/patch07
-Patch7:		https://www.mpfr.org/mpfr-current/patch08
-Patch8:		https://www.mpfr.org/mpfr-current/patch09
-Patch9:		https://www.mpfr.org/mpfr-current/patch10
-Patch10:	https://www.mpfr.org/mpfr-current/patch11
-Patch11:	https://www.mpfr.org/mpfr-current/patch12
-Patch12:	https://www.mpfr.org/mpfr-current/patch13
 # (tpg) 2022-05-28 due to patch to enabl float128 support for clang in glibc
 # configure:18793: checking for GMP_NUMB_BITS and sizeof(mp_limb_t) consistency
 # configure:18825: /usr/bin/clang -o conftest -Os -fomit-frame-pointer -g3 -gdwarf-4 -Wstrict-aliasing=2 -pipe -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fstack-protector-all --param=ssp-buffer-size=4 -m64 -mtune=generic -flto -O3 -fprofile-generate -mllvm -vp-counters-per-site=16  -Os -fomit-frame-pointer -g3 -gdwarf-4 -Wstrict-aliasing=2 -pipe -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fstack-protector-all --param=ssp-buffer-size=4 -m64 -mtune=generic -flto -O3 -Wl,-O2  -Wl,--no-undefined -flto  -fprofile-generate -Wl,--disable-new-dtags conftest.c  >&5
@@ -161,6 +148,36 @@ fi
 
 rm -rf installed-docs
 mv %{buildroot}%{_docdir}/%{name} installed-docs
+
+# (tpg) strip LTO from "LLVM IR bitcode" files
+check_convert_bitcode() {
+    printf '%s\n' "Checking for LLVM IR bitcode"
+    llvm_file_name=$(realpath ${1})
+    llvm_file_type=$(file ${llvm_file_name})
+
+    if printf '%s\n' "${llvm_file_type}" | grep -q "LLVM IR bitcode"; then
+# recompile without LTO
+    clang %{optflags} -fno-lto -Wno-unused-command-line-argument -x ir ${llvm_file_name} -c -o ${llvm_file_name}
+    elif printf '%s\n' "${llvm_file_type}" | grep -q "current ar archive"; then
+    printf '%s\n' "Unpacking ar archive ${llvm_file_name} to check for LLVM bitcode components."
+# create archive stage for objects
+    archive_stage=$(mktemp -d)
+    archive=${llvm_file_name}
+    cd ${archive_stage}
+    ar x ${archive}
+    for archived_file in $(find -not -type d); do
+        check_convert_bitcode ${archived_file}
+        printf '%s\n' "Repacking ${archived_file} into ${archive}."
+        ar r ${archive} ${archived_file}
+    done
+    ranlib ${archive}
+    cd ..
+    fi
+}
+
+for i in $(find %{buildroot} -type f -name "*.[ao]"); do
+    check_convert_bitcode ${i}
+done
 
 %check
 # (tpg) 2022-05-27 tests fails on aarch64 
