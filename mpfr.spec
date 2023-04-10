@@ -2,13 +2,14 @@
 %define libname %mklibname %{name} %{major}
 %define devname %mklibname %{name} -d
 %define statname %mklibname %{name} -d -s
-%bcond_with crosscompile
 
 # (tpg) optimize it a bit
 %global optflags %{optflags} -O3
 
 # (tpg) enable PGO build
+%if ! %{cross_compiling}
 %bcond_without pgo
+%endif
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
@@ -92,9 +93,6 @@ LDFLAGS="%{build_ldflags} -fprofile-generate" \
 %ifarch %{ix86} %{x86_64}
 	--disable-float128 \
 %endif
-%if %{with crosscompile}
-	--with-gmp-lib=%{_prefix}/%{_target_platform}/sys-root%{_libdir} \
-%endif
 	--enable-thread-safe
 
 if [ "$?" != '0' ]; then
@@ -129,9 +127,6 @@ LDFLAGS="%{build_ldflags} -fprofile-use=$PROFDATA" \
 	--enable-tests-timeout=60 \
 %ifarch %{ix86} %{x86_64}
 	--disable-float128 \
-%endif
-%if %{with crosscompile}
-	--with-gmp-lib=%{_prefix}/%{_target_platform}/sys-root%{_libdir} \
 %endif
 	--enable-thread-safe
 
