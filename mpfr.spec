@@ -13,8 +13,8 @@
 
 Summary:	Multiple-precision floating-point computations with correct rounding
 Name:		mpfr
-Version:	4.2.0
-Release:	3
+Version:	4.2.1
+Release:	1
 License:	LGPLv3+
 Group:		System/Libraries
 Url:		http://www.mpfr.org/
@@ -22,15 +22,7 @@ Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
 # Patches from upstream (listed under the "Bugs" heading at
 # https://www.mpfr.org/mpfr-current/):
-Patch0:		https://www.mpfr.org/mpfr-current/patch01
-Patch1:		https://www.mpfr.org/mpfr-current/patch02
-Patch2:		https://www.mpfr.org/mpfr-current/patch03
-Patch3:		https://www.mpfr.org/mpfr-current/patch04
-Patch4:		https://www.mpfr.org/mpfr-current/patch05
-Patch5:		https://www.mpfr.org/mpfr-current/patch06
-Patch6:		https://www.mpfr.org/mpfr-current/patch07
-Patch7:		https://www.mpfr.org/mpfr-current/patch08
-Patch8:		https://www.mpfr.org/mpfr-current/patch09
+# [currently none]
 # (tpg) 2022-05-28 due to patch to enabl float128 support for clang in glibc
 # configure:18793: checking for GMP_NUMB_BITS and sizeof(mp_limb_t) consistency
 # configure:18825: /usr/bin/clang -o conftest -Os -fomit-frame-pointer -g3 -gdwarf-4 -Wstrict-aliasing=2 -pipe -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fstack-protector-all --param=ssp-buffer-size=4 -m64 -mtune=generic -flto -O3 -fprofile-generate -mllvm -vp-counters-per-site=16  -Os -fomit-frame-pointer -g3 -gdwarf-4 -Wstrict-aliasing=2 -pipe -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fstack-protector-all --param=ssp-buffer-size=4 -m64 -mtune=generic -flto -O3 -Wl,-O2  -Wl,--no-undefined -flto  -fprofile-generate -Wl,--disable-new-dtags conftest.c  >&5
