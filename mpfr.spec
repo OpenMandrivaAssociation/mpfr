@@ -17,7 +17,7 @@ Version:	4.2.1
 Release:	1
 License:	LGPLv3+
 Group:		System/Libraries
-Url:		http://www.mpfr.org/
+Url:		https://www.mpfr.org/
 Source0:	http://www.mpfr.org/mpfr-current/mpfr-%{version}.tar.xz
 Source1:	%{name}.rpmlintrc
 # Patches from upstream (listed under the "Bugs" heading at
