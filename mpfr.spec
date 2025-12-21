@@ -34,6 +34,10 @@ Source1:	%{name}.rpmlintrc
 # define _Float128 __float128
 #                  ^
 Patch99:	mpfr-4.1.0-skip-test-because-of-cannot-combine-with-previous-__float128-declaration-specifier.patch
+BuildRequires:	automake
+BuildRequires:	libtool-base
+BuildRequires:	slibtool
+BuildRequires:	make
 BuildRequires:	pkgconfig(gmp)
 BuildRequires:	autoconf-archive
 BuildRequires:	texinfo
