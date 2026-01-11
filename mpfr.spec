@@ -35,7 +35,6 @@ Source1:	%{name}.rpmlintrc
 #                  ^
 Patch99:	mpfr-4.1.0-skip-test-because-of-cannot-combine-with-previous-__float128-declaration-specifier.patch
 BuildRequires:	automake
-BuildRequires:	libtool-base
 BuildRequires:	slibtool
 BuildRequires:	make
 BuildRequires:	pkgconfig(gmp)
@@ -89,6 +88,7 @@ export CXX=clang++
 %if %{with pgo}
 export LD_LIBRARY_PATH="$(pwd)"
 
+LIBTOOL=rlibtool \
 CFLAGS="%{optflags} -fprofile-generate -mllvm -vp-counters-per-site=16" \
 CXXFLAGS="%{optflags} -fprofile-generate" \
 LDFLAGS="%{build_ldflags} -fprofile-generate" \
@@ -108,11 +108,11 @@ if [ "$?" != '0' ]; then
     exit 1
 fi
 
-%make_build
+%make_build LIBTOOL=rlibtool
 
 # (tpg) build tests
 cd tools/bench
-%make_build mpfrbench
+%make_build mpfrbench LIBTOOL=rlibtool
 ./mpfrbench
 cd -
 
@@ -123,6 +123,7 @@ rm -f *.profraw
 
 make clean
 
+LIBTOOL=rlibtool \
 CFLAGS="%{optflags} -fprofile-use=$PROFDATA" \
 CXXFLAGS="%{optflags} -fprofile-use=$PROFDATA" \
 LDFLAGS="%{build_ldflags} -fprofile-use=$PROFDATA" \
@@ -143,10 +144,10 @@ if [ "$?" != "0" ]; then
 	exit 1
 fi
 
-%make_build
+%make_build LIBTOOL=rlibtool
 
 %install
-%make_install
+%make_install LIBTOOL=rlibtool
 
 rm -rf installed-docs
 mv %{buildroot}%{_docdir}/%{name} installed-docs
